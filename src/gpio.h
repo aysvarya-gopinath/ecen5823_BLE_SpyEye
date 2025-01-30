@@ -1,20 +1,20 @@
 /*
-   gpio.h
-  
-    Created on: Dec 12, 2018
-        Author: Dan Walkes
+gpio.h
 
-    Updated by Dave Sluiter Sept 7, 2020. moved #defines from .c to .h file.
-    Updated by Dave Sluiter Dec 31, 2020. Minor edits with #defines.
+   Created on: Dec 12, 2018
+       Author: Dan Walkes
+   Updated by Dave Sluiter Dec 31, 2020. Minor edits with #defines.
 
-    Editor: Feb 26, 2022, Dave Sluiter
-    Change: Added comment about use of .h files.
+   March 17
+   Dave Sluiter: Use this file to define functions that set up or control GPIOs.
+
+   Jan 24, 2023
+   Dave Sluiter: Cleaned up gpioInit() to make it less confusing for students regarding
+                 drive strength setting.
 
  *
- * Student edit: Add your name and email address here:
- * @student    Awesome Student, Awesome.Student@Colorado.edu
+ * @Aysvarya Gopinath   Aysvarya.Gopinath@Colorado.edu
  *
- 
  */
 
 

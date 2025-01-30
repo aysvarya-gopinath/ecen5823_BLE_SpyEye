@@ -48,6 +48,11 @@
 #ifndef APP_H
 #define APP_H
 
+
+//#define LOWEST_ENERGY_MODE 0 //EM0, EM1,EM2,EM3
+//#define LOWEST_ENERGY_MODE 1
+#define LOWEST_ENERGY_MODE 2
+//#define LOWEST_ENERGY_MODE 3
 /**************************************************************************//**
  * Application Init.
  *****************************************************************************/

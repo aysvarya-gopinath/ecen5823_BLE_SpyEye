@@ -35,10 +35,9 @@
  *
  *
  *
- * Student edit: Add your name and email address here:
- * @student    Awesome Student, Awesome.Student@Colorado.edu
+ * @Aysvarya Gopinath   Aysvarya.Gopinath@Colorado.edu
  *
- *
+ *@References : https://learn.microsoft.com/en-us/cpp/preprocessor/hash-if-hash-elif-hash-else-and-hash-endif-directives-c-cpp?view=msvc-170
  *
  ******************************************************************************/
 #include "em_common.h"
@@ -46,8 +45,8 @@
 #include "sl_bluetooth.h"
 #include "gatt_db.h"
 #include "app.h"
-
-
+#include "src/timers.h"
+#include"src/oscillators.h"
 // *************************************************
 // Students: It is OK to modify this file.
 //           Make edits appropriate for each
@@ -55,7 +54,6 @@
 // *************************************************
 
 #include "sl_status.h"             // for sl_status_print()
-
 #include "src/ble_device_type.h"
 #include "src/gpio.h"
 #include "src/lcd.h"
@@ -94,9 +92,12 @@
 // Students: We'll need to modify this for A2 onward so that compile time we
 //           control what the lowest EM (energy mode) the MCU sleeps to. So
 //           think "#if (expression)".
-#define APP_IS_OK_TO_SLEEP      (false)
-//#define APP_IS_OK_TO_SLEEP      (true)
 
+#if LOWEST_ENERGY_MODE==0
+  #define APP_IS_OK_TO_SLEEP      (false)
+#else
+  #define APP_IS_OK_TO_SLEEP      (true)
+#endif
 
 // Return values for app_sleep_on_isr_exit():
 //   SL_POWER_MANAGER_IGNORE; // The module did not trigger an ISR and it doesn't want to contribute to the decision
@@ -159,10 +160,18 @@ SL_WEAK void app_init(void)
   // This is called once during start-up.
   // Don't call any Bluetooth API functions until after the boot event.
 
-  // Student Edit: Add a call to gpioInit() here
-
-  gpioInit(); //gpio initialisation
-
+  gpioInit (); //gpio initialization
+  //power requirement for EM1 or  EM2
+#if LOWEST_ENERGY_MODE == 1
+  sl_power_manager_add_em_requirement(SL_POWER_MANAGER_EM1);
+#elif LOWEST_ENERGY_MODE ==2
+  sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM2);
+#else
+#endif
+  oscillator_config (); // initialize the oscillator
+  initLETIMER0 (); //initialize the letimer0
+  NVIC_ClearPendingIRQ (LETIMER0_IRQn);  //clear pendings
+  NVIC_EnableIRQ (LETIMER0_IRQn); // config NVIC to take IRQs from LETIMER0
 } // app_init()
 
 
@@ -243,4 +252,3 @@ void sl_bt_on_event(sl_bt_msg_t *evt)
 
 
 } // sl_bt_on_event()
-
