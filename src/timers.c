@@ -43,8 +43,8 @@ initLETIMER0 ()
 // init the timer
   LETIMER_Init (LETIMER0, &letimerInitData);
 #if LOWEST_ENERGY_MODE == 3   //ulfrco
-LETIMER_CompareSet(LETIMER0,0,COMP0_LOAD);       // load COMP0 (top)
-LETIMER_CompareSet(LETIMER0,1,COMP1_LOAD);
+  LETIMER_CompareSet(LETIMER0,0,COMP0_LOAD);       // load COMP0 (top)
+  LETIMER_CompareSet(LETIMER0,1,COMP1_LOAD);
 #else  //lfxo
   LETIMER_CompareSet (LETIMER0, 0, COMP0_VAL);  //load COMP0 (top)
   LETIMER_CompareSet (LETIMER0, 1, COMP1_VAL); // load COMP1
