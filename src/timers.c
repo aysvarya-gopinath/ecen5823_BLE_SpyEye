@@ -43,105 +43,71 @@ void initLETIMER0 ()
         0                 // COMP0(top) Value, I calculate this below
       };
 
-  LETIMER_Init (LETIMER0, &letimerInitData);// init the timer
- //ulfrco
-  LETIMER_CompareSet(LETIMER0,0,COMP0_LOAD);// load COMP0 (top)
-
-
-// Clear all IRQ flags in the LETIMER0 IF status register
-  LETIMER_IntClear (LETIMER0, 0xFFFFFFFF); // punch them all down
-
-// Set UF  in LETIMER0_IEN, so that the timer will generate IRQs to the NVIC.
-  temp = LETIMER_IEN_UF;
-
+  LETIMER_Init (LETIMER0, &letimerInitData);                 // init the timer
+  LETIMER_CompareSet (LETIMER0, 0, COMP0_LOAD); // load COMP0 (top)
+  LETIMER_IntClear (LETIMER0, 0xFFFFFFFF); // Clear all IRQ flags in the LETIMER0 IF status register
+  temp = LETIMER_IEN_UF; // Set UF  in LETIMER0_IEN, so that the timer will generate IRQs to the NVIC.
   LETIMER_IntEnable (LETIMER0, temp); // Make sure you have defined the ISR routine LETIMER0_IRQHandler()
-
-// Enable the timer to starting counting down, set LETIMER0_CMD[START] bit, see LETIMER0_STATUS[RUNNING] bit
-  LETIMER_Enable (LETIMER0, true);
-
-// read it a few times to make sure it's running within the range of values we expect
+  LETIMER_Enable (LETIMER0, true); // Enable the timer to starting counting down, set LETIMER0_CMD[START] bit, see LETIMER0_STATUS[RUNNING] bit
+  temp = LETIMER_CounterGet (LETIMER0); // read it a few times to make sure it's running within the range of values we expect
   temp = LETIMER_CounterGet (LETIMER0);
   temp = LETIMER_CounterGet (LETIMER0);
-  temp = LETIMER_CounterGet (LETIMER0);
-  //uint32_t freq=CMU_ClockFreqGet(cmuClock_LETIMER0);
-    // LOG_INFO("frequency %u",freq);
-
-
-} // initLETIMER0()
-
-//waits in micro seconds
-void timerWaitUs (uint32_t us_wait)
-{
-  uint32_t current_ticks, max_load, wait_cnt, wrap_cnt; // all time values with respect to ticks
-
-if ((us_wait<=MAX_WAIT)&&(us_wait>=MIN_WAIT))
-  { // in the range
-//ulfrco
- // wait_cnt = ((us_wait/1000)* ULFRCO_FREQ)/1000;  //old
-    wait_cnt = (us_wait* ULFRCO_FREQ)/US_PER_S; // truncation
-  max_load = COMP0_LOAD; // maximum value of the ticks
-  current_ticks = LETIMER_CounterGet(LETIMER0); //holds the current CNT value
-  //case 1
-//old if (wait_cnt < current_ticks) //wait time is less than the current time
-  if ((wait_cnt <= max_load) && (wait_cnt <= current_ticks)) //wait time is less than the current time
-    {
-      while (LETIMER_CounterGet(LETIMER0)> (current_ticks-wait_cnt))
-          {} //
-    }// wait_cnt is within max_load and current_ticks
-
-  //case 2
-  else //wait time is greater than the current time
-    {
-  // wrap_cnt=(max_load-wait_cnt)+current_ticks; old
-      while (!(LETIMER_IntGet(LETIMER0) & LETIMER_IF_UF)) { //new
-      }  // Busy wait for underflow
-      wrap_cnt = wait_cnt - current_ticks; //the additional time to wait
-   while (LETIMER_CounterGet (LETIMER0) !=wrap_cnt) //wrapping up
-               {}
-    } //wait_cnt is greater than current ticks but less than max load
-
-}//in the range
-
- else //wait time is out of range
-   {
-LOG_ERROR("\n\r OUT OF RANGE,Invalid wait time: %u\n",us_wait);//log error
-
-   } // wait time is more than the max load cnt
 
 }
 
+//timer wait for polling in micro-seconds
+void timerWaitUs (uint32_t us_wait)
+{
+  uint32_t current_ticks, max_load, wait_cnt, wrap_cnt; // all time values with respect to ticks
+  if ((us_wait <= MAX_WAIT) && (us_wait >= MIN_WAIT)) // in the range
+    {
+      wait_cnt = (us_wait * ULFRCO_FREQ) / US_PER_S; // truncation
+      max_load = COMP0_LOAD; // maximum value of the ticks for ulfrco
+      current_ticks = LETIMER_CounterGet (LETIMER0); //holds the current CNT value
+
+      if ((wait_cnt <= max_load) && (wait_cnt <= current_ticks)) //wait time is less than the current time
+        {
+          while (LETIMER_CounterGet (LETIMER0) > (current_ticks - wait_cnt))
+            { } // wait
+        }
+      else
+        {
+          while (!(LETIMER_IntGet (LETIMER0) & LETIMER_IF_UF))
+            {}  // Busy wait for underflow
+          wrap_cnt = wait_cnt - current_ticks;
+          while (LETIMER_CounterGet (LETIMER0) != wrap_cnt) //wrapping up
+            {} //the additional time to wait
+        }
+    } //in the range
+
+  else //wait time is out of range
+    {
+      LOG_ERROR("\n\r OUT OF RANGE,Invalid wait time: %u\n", us_wait); //log error
+    } // wait time is more than the max load cnt
+}
+
+//unity test function of the timer delay
 void unit_test_timerWaitUs() {
-   // LOG_INFO("Running unit tests for TimerWaitUs()...\n");
 
-  // Negative test (should not do anything)
-      //LOG_INFO("Testing negative value (should not delay)\n");
-      GPIO_PinOutToggle(gpioPortF,5);
-      timerWaitUs(-10000);
-      GPIO_PinOutToggle(gpioPortF,5);
+  GPIO_PinOutToggle (gpioPortF, 5);// small delay
+  timerWaitUs (10000);  // 10ms
+  GPIO_PinOutToggle (gpioPortF, 5);
 
-      // Small delay test (10ms)
-    GPIO_PinOutToggle(gpioPortF,5);
-    timerWaitUs(10000);  // 10ms
-    GPIO_PinOutToggle(gpioPortF,5);
+  GPIO_PinOutToggle (gpioPortF, 5);// medium delay
+  timerWaitUs (100000);  // 100ms
+  GPIO_PinOutToggle (gpioPortF, 5);
 
-    // Medium delay test (100ms)
-    GPIO_PinOutToggle(gpioPortF,5);
-    timerWaitUs(100000);  // 100ms
-    GPIO_PinOutToggle(gpioPortF,5);
+  GPIO_PinOutToggle (gpioPortF, 5);// large delay
+  timerWaitUs (1000000);  // 1s
+  GPIO_PinOutToggle (gpioPortF, 5);
 
-    // Large delay test (1s)
-    GPIO_PinOutToggle(gpioPortF,5);
-    timerWaitUs(1000000);  // 1s
-    GPIO_PinOutToggle(gpioPortF,5);
+  GPIO_PinOutToggle (gpioPortF, 5);// out-of-range value
+  timerWaitUs (4000000);
+  GPIO_PinOutToggle (gpioPortF, 5);
 
-    // Out-of-range test (4s - should fail)
-   // LOG_INFO("Testing out-of-range value (should not delay)\n");
-    GPIO_PinOutToggle(gpioPortF,5);
-    timerWaitUs(4000000);
-    GPIO_PinOutToggle(gpioPortF,5);
+  GPIO_PinOutToggle (gpioPortF, 5);// negative value
+  timerWaitUs (-10000);
+  GPIO_PinOutToggle (gpioPortF, 5);
 
-
-
-   // LOG_INFO("All tests completed. Observe LED blinking and Energy Profiler output.\n");
 }
 

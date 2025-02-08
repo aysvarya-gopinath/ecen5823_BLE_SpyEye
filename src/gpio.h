@@ -39,8 +39,7 @@ void gpioLed0SetOff();
 void gpioLed1SetOn();
 void gpioLed1SetOff();
 
-void gpioI2CSDADisable();
-void gpioI2CSCLDisable();
+//sensor on/off functions
 void gpioSi7021ON();
 void gpioSi7021OFF();
 

@@ -14,9 +14,6 @@
 
 #define READ_TEMPERATURE  (0x02) //measure temperature set
 
-// Used for signaling events
-//static volatile uint32_t schedule_event;
-
 /****************************************************************************
  * Set Event scheduler the timer
  *****************************************************************************/

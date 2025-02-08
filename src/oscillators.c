@@ -15,8 +15,6 @@ void oscillator_config(){
   CMU_ClockSelectSet(cmuClock_LFA,cmuSelect_ULFRCO); //set source //1000hz
   CMU_ClockDivSet (cmuClock_LETIMER0, cmuClkDiv_1); //prescaler
   CMU_ClockEnable(cmuClock_LETIMER0,true); //enable clock
-
-
 }
 
 

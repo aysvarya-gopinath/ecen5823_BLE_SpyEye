@@ -19,7 +19,8 @@
 #ifndef SRC_IRQ_H_
 #define SRC_IRQ_H_
 
+//letimer interrupt handler
 void LETIMER0_IRQHandler(void) ;
-void peripheral_isr(void);
+
 
 #endif /* SRC_IRQ_H_ */

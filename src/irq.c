@@ -8,14 +8,14 @@
 #include "em_letimer.h"
 #include "timers.h"
 #include "gpio.h"
-
+#include "irq.h"
 #include "scheduler.h"
 #include"em_core_generic.h"
 
+//interrupt hanlder
 void LETIMER0_IRQHandler (void)
 {
   CORE_DECLARE_IRQ_STATE;
-
   uint32_t flags = LETIMER_IntGetEnabled (LETIMER0); // Get only enabled interrupts
   LETIMER_IntClear (LETIMER0, flags);  // Clear pending interrupts
   CORE_ENTER_CRITICAL(); // disable NVIC interrupts

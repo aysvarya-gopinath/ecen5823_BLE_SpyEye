@@ -17,7 +17,7 @@
 #define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"
 
-I2C_Data Buff;
+uint8_t  read_data[ 2 ]; //to hold sensor data
 
 // Initialize the I2C hardware
 static I2CSPM_Init_TypeDef  I2C_Config = {
@@ -39,95 +39,64 @@ I2CSPM_Init(& I2C_Config);
 }
 
 //read function
-I2C_TransferReturn_TypeDef i2c_read( uint8_t *read_cmd, uint16_t read_cmd_len)
+I2C_TransferReturn_TypeDef i2c_read( uint8_t *read_data, uint16_t read_data_len)
 {
-    I2C_TransferSeq_TypeDef transferSequence;
-    I2C_TransferReturn_TypeDef transferStatus;
-
-    transferSequence.addr = SI7021_DEVICE_ADDR << 1;
-    transferSequence.flags = I2C_FLAG_READ;
-    transferSequence.buf[ 0 ].data = read_cmd;
-    transferSequence.buf[ 0 ].len = read_cmd_len;
-    transferStatus = I2CSPM_Transfer( I2C0, &transferSequence );
-    if (transferStatus != i2cTransferDone){
-    LOG_ERROR("\n\r I2C bus write of cmd failed");
-    }
-    return transferStatus;
+  I2C_TransferSeq_TypeDef transferSequence;
+  I2C_TransferReturn_TypeDef transferStatus;
+  transferSequence.addr = SI7021_DEVICE_ADDR << 1;
+  transferSequence.flags = I2C_FLAG_READ;
+  transferSequence.buf[0].data = read_data;
+  transferSequence.buf[0].len = read_data_len;
+  transferStatus = I2CSPM_Transfer ( I2C0, &transferSequence);
+  return transferStatus;
 }
 
 //write function
 I2C_TransferReturn_TypeDef i2c_write( uint8_t *write_cmd, uint16_t write_cmd_len)
 {
-    I2C_TransferSeq_TypeDef transferSequence;
-    I2C_TransferReturn_TypeDef transferStatus;
-    transferSequence.addr = SI7021_DEVICE_ADDR << 1;
-    transferSequence.flags = I2C_FLAG_WRITE;
-    transferSequence.buf[ 0 ].data = write_cmd;
-    transferSequence.buf[ 0 ].len = write_cmd_len;
-    transferStatus = I2CSPM_Transfer( I2C0, &transferSequence );
-    if (transferStatus != i2cTransferDone){
-       LOG_ERROR("\n\r I2C bus write of cmd failed");
-       }
-    return transferStatus;
+  I2C_TransferSeq_TypeDef transferSequence;
+  I2C_TransferReturn_TypeDef transferStatus;
+  transferSequence.addr = SI7021_DEVICE_ADDR << 1;
+  transferSequence.flags = I2C_FLAG_WRITE;
+  transferSequence.buf[0].data = write_cmd;
+  transferSequence.buf[0].len = write_cmd_len;
+  transferStatus = I2CSPM_Transfer ( I2C0, &transferSequence);
+  return transferStatus;
 }
 
+//write command via i2c
 void  write_cmd_to_si7021(void)
 {
   I2C_TransferReturn_TypeDef status;
-    uint8_t tries = 10;
-    i2c_init(); //initialise the i2c
-//    gpioSi7021ON();// Enable the sensor
-//    // Wait for 80ms
-//    timerWaitUs(80000);
-    Buff.data[0] = MEASURE_TEMP_NO_HOLD_MASTER;//temperature read command
-    Buff.len = 1; //length of buff data
-    while (tries--)
+  uint8_t write_cmd = MEASURE_TEMP_NO_HOLD_MASTER; //temperature read command
+  uint16_t write_cmd_len = sizeof(write_cmd); //length of buff data
+  status = i2c_write (&write_cmd, write_cmd_len); //write the command
+  if (status != i2cTransferDone)
     {
-        status = i2c_write(Buff.data, Buff.len);
-        if (status == i2cTransferDone)
-        {
-           // LOG_INFO("Tranfer Done!\n");
-            break;
-        }
-        else
-        {
-            timerWaitUs(10000);
-        }
+      LOG_ERROR("\n\r I2C bus command write failed with %d status\n", status);
     }
 }
+
 void  read_temp_from_si7021(double *temperature)
-{I2C_TransferReturn_TypeDef status;
-    //timerWaitUs(10000); // Wait for 10ms
-  uint8_t  tries = 10;
-    Buff.len = 2;
-    while (tries--)
+{
+  I2C_TransferReturn_TypeDef status;
+  uint16_t read_data_len = sizeof(read_data); //length of the argument to hold the data
+  status = i2c_read (read_data, read_data_len); //read the temperature
+  if (status == i2cTransferDone)
     {
-        status = i2c_read(Buff.data, Buff.len);
-        if (status == i2cTransferDone)
-        {
-            // Calculate the temperature value from the read data
-            *temperature = ((uint32_t)Buff.data[0] << 8) | (Buff.data[1] & 0xFC);
-            *temperature = ((175.72 * (*temperature)) / MAX_16bit) - 46.85;
-            LOG_INFO("\n\r Temperature: %f\n", *temperature);
-            break;
-           // 175.72 → Scaling factor from sensor datasheet.
-           // -46.85 → Temperature offset from sensor datasheet.
-        }
-        else
-        {
-            timerWaitUs(10000);//wait for 10000
-        }
+      uint32_t temp_raw = ((uint32_t) read_data[0] << 8)
+          | (uint32_t) read_data[1]; //extract temperature from raw data
+      *temperature = ((SCALING_FACTOR * temp_raw) / MAX_16bit) - TEMP_OFFSET; //convert to celcius
+      LOG_INFO("\n\r Temperature: %f C\n", *temperature);
+    }
+  else
+    {
+      LOG_ERROR("\n\r I2C bus temperature read failed with %d status\n",
+                status);
+    }
 
-       }
+}
 
-       gpioSi7021OFF();// turn off the sensor
-       I2C_Reset( I2C0 );// reset i2c
-       I2C_Enable( I2C0, false );
-       gpioI2CSDADisable();// disable sda
-       gpioI2CSCLDisable();//disable scl
-       CMU_ClockEnable( cmuClock_I2C0, false ); //turn off the clock
-       return;
-        }
 
 
 
