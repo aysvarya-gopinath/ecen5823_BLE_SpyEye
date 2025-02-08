@@ -20,26 +20,24 @@
 #ifndef __myTimers
 #define __myTimers
 
-#define LETIMER_ON_TIME_MS  (175) //led on-time
-#define LETIMER_PERIOD_MS   (2250)
+#define LETIMER_PERIOD_MS   (3000) //3000ms is 3sec
+#define US_PER_S           (1000000) //micro seconds in 1second
+#define MIN_WAIT            (1000)      //minimum wait is 1000us and 1ms
+#define MAX_WAIT             (3000000)   // maximum wait is 3000ms
 // ULFRCO
 #define ULFRCO_FREQ         (1000)   //1000hz
-#define COMP1_LOAD          (ULFRCO_FREQ*LETIMER_ON_TIME_MS/1000   //175
-#define COMP0_LOAD          (ULFRCO_FREQ*LETIMER_PERIOD_MS)/1000    //2250
-//LFXO
-#define PRESCALER_VALUE     (4)
-#define LFXO_CLK_FREQ       (32768/PRESCALER_VALUE)          //8192 Hz for LFXO
-#define COMP0_VAL           (LETIMER_PERIOD_MS*LFXO_CLK_FREQ)/1000  //18,432
-#define COMP1_VAL           (LETIMER_ON_TIME_MS*LFXO_CLK_FREQ)/1000 // 1433 on time
+#define COMP0_LOAD          (ULFRCO_FREQ*LETIMER_PERIOD_MS)/1000 //3000
 
 /**************************************************************************//**
  * Initialization LETIMER0
  *****************************************************************************/
-void initLETIMER0 ();
+void initLETIMER0 (void);
 
-
-
-
+/**************************************************************************//**
+ *  LETIMER0 wait
+ *****************************************************************************/
+void timerWaitUs(uint32_t us_wait);
+void unit_test_timerWaitUs();
 
 
 #endif

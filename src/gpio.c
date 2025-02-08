@@ -25,8 +25,14 @@
 #include <stdbool.h>
 #include "em_gpio.h"
 #include <string.h>
-
 #include "gpio.h"
+
+#define SI7021_port      gpioPortD
+#define SI7021_pin       15 //PD15
+#define I2C0_SCL_port    gpioPortC
+#define I2C0_SCL_pin     10 //PC10
+#define I2C0_SDA_port    gpioPortC
+#define I2C0_SDA_pin     11 //PC11
 
 // Student Edit: Define these, 0's are placeholder values.
 //
@@ -56,6 +62,27 @@ gpioInit ()
 
 } // gpioInit()
 
+void gpioI2CSDADisable()
+{
+    GPIO_PinOutClear( I2C0_SDA_port, I2C0_SDA_pin );
+}
+
+void gpioI2CSCLDisable()
+{
+    GPIO_PinOutClear( I2C0_SCL_port, I2C0_SCL_pin );
+}
+
+void gpioSi7021ON()
+{
+    GPIO_PinOutSet( SI7021_port, SI7021_pin );
+}
+
+void gpioSi7021OFF()
+{
+    GPIO_PinOutClear( SI7021_port, SI7021_pin );
+}
+
+//LED functions
 void gpioLed0SetOn ()
 {
   GPIO_PinOutSet (LED_port, LED0_pin);

@@ -47,6 +47,11 @@
 #include "app.h"
 #include "src/timers.h"
 #include"src/oscillators.h"
+#include"src/scheduler.h"
+#include"src/i2c.h"
+
+
+#include "em_gpio.h"
 // *************************************************
 // Students: It is OK to modify this file.
 //           Make edits appropriate for each
@@ -169,9 +174,10 @@ SL_WEAK void app_init(void)
 #else
 #endif
   oscillator_config (); // initialize the oscillator
-  initLETIMER0 (); //initialize the letimer0
   NVIC_ClearPendingIRQ (LETIMER0_IRQn);  //clear pendings
   NVIC_EnableIRQ (LETIMER0_IRQn); // config NVIC to take IRQs from LETIMER0
+  initLETIMER0 (); //initialize the letimer0
+
 } // app_init()
 
 
@@ -208,15 +214,23 @@ SL_WEAK void app_process_action(void)
   //         We will create/use a scheme that is far more energy efficient in
   //         later assignments.
 
-  delayApprox(3500000);
 
-  gpioLed0SetOn();
-  gpioLed1SetOn();
 
-  delayApprox(3500000);
+ // unit_test_timerWaitUs();
+ uint32_t evt;
+ double temperature;
+  evt = getNextEvent();
+  switch (evt) {
+  case READ_TEMPERATURE:
+    I2CSPM_Init(& I2C_Config); //initialise the i2c
+    gpioSi7021ON();// Enable the sensor
+    timerWaitUs(80000);// Wait for 80ms
+    write_cmd_to_si7021(); // write command to measure temperature
+    timerWaitUs(10000); // conversion delay
+    read_temp_from_si7021(&temperature); //read the temperature
+  break;
+    } // switch*/
 
-  gpioLed0SetOff();
-  gpioLed1SetOff();
 
 
 } // app_process_action()
