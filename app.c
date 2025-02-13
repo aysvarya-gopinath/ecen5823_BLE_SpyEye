@@ -214,27 +214,18 @@ SL_WEAK void app_process_action(void)
   //         We will create/use a scheme that is far more energy efficient in
   //         later assignments.
 
-  /* UNIT TEST FUNCTION FOR TIMER WAIT
-   * uncomment this function to run the test
+
+
+  /* UNIT TEST FUNCTION FOR TIMER WAIT (NON-BLOCKING)
+   * un-comment this function to run the test
    */
-  // unit_test_timerWaitUs();
-  double temperature;
-  uint32_t evt = getNextEvent ();
+  // unit_test_timerWaitIrq();
 
-  switch (evt)
-    {
-    case READ_TEMPERATURE:
-      i2c_init ();  //initialize i2c
-      gpioSi7021ON ();  // Enable the sensor
-      timerWaitUs (80000);  // Wait for 80ms
-      write_cmd_to_si7021 (); // write command to measure temperature
-      timerWaitUs (10000); // conversion delay
-      read_temp_from_si7021 (&temperature); //read the temperature
-      gpioSi7021OFF (); // turn off the sensor
-      break;
-    } // switch*/
+//  timerWaitUs_irq(80000);
 
-} // app_process_action()
+uint32_t evt = getNextEvent();
+ Si7021_state_machine(evt); //start the state machine
+ } // app_process_action()
 
 
 

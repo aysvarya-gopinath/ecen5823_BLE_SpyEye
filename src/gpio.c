@@ -41,8 +41,8 @@
 #define LED0_pin   (4) //PF4
 #define LED1_pin   (5)  //PF5
 
-#define SI7021_port      (gpioPortD)
-#define SI7021_pin       15 //PD15
+#define SI7021_port  (gpioPortD)
+#define SI7021_pin    15 //PD15
 
 // Set GPIO drive strengths and modes of operation
 void

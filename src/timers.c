@@ -55,8 +55,42 @@ void initLETIMER0 ()
 
 }
 
-//timer wait for polling in micro-seconds
-void timerWaitUs (uint32_t us_wait)
+//timer wait by interrupts in micro-seconds
+void timerWaitUs_irq(uint32_t us_wait)
+{
+  uint32_t current_ticks, max_load, wait_cnt, wrap_cnt; // all time values with respect to ticks
+  if ((us_wait <= MAX_WAIT) && (us_wait >= MIN_WAIT)) // in the range
+    {
+      wait_cnt = (us_wait * ULFRCO_FREQ) / US_PER_S; // truncation
+      max_load = COMP0_LOAD; // maximum value of the ticks for ulfrco
+      current_ticks = LETIMER_CounterGet (LETIMER0); //holds the current CNT value
+
+      if ((wait_cnt <= max_load) && (wait_cnt <= current_ticks)) //wait time is less than the current time
+        {
+
+          LETIMER_CompareSet (LETIMER0, 1, current_ticks - wait_cnt); //load wait_cnt in the timer COMP1
+          LETIMER_IntClear (LETIMER0, 0xFFFFFFFF); //clear the interrupts
+          LETIMER_IntEnable (LETIMER0, LETIMER_IEN_COMP1); // generate Comp1 interrupt
+        }
+      else
+        {
+          wrap_cnt = (max_load - wait_cnt) + current_ticks; //wrap_around
+          LETIMER_CompareSet (LETIMER0, 1, wrap_cnt); //load wait_cnt in the timer COMP1
+          LETIMER_IntClear (LETIMER0, 0xFFFFFFFF);
+          LETIMER_IntEnable (LETIMER0, LETIMER_IEN_COMP1); // generate an interrupt
+          //LETIMER0->IEN |= LETIMER_IEN_COMP1; //new
+        }
+      LETIMER_Enable (LETIMER0, true);
+    } //in the range
+
+  else //wait time is out of range
+    {
+      LOG_ERROR("\n\r OUT OF RANGE,Invalid wait time: %u\n", us_wait); //log error
+    } // wait time is more than the max load cnt
+}
+
+//timer wait by polling in micro-seconds
+void timerWaitUs_polled(uint32_t us_wait)
 {
   uint32_t current_ticks, max_load, wait_cnt, wrap_cnt; // all time values with respect to ticks
   if ((us_wait <= MAX_WAIT) && (us_wait >= MIN_WAIT)) // in the range
@@ -68,7 +102,7 @@ void timerWaitUs (uint32_t us_wait)
       if ((wait_cnt <= max_load) && (wait_cnt <= current_ticks)) //wait time is less than the current time
         {
           while (LETIMER_CounterGet (LETIMER0) > (current_ticks - wait_cnt))
-            { } // wait
+            {} // wait
         }
       else
         {
@@ -86,28 +120,28 @@ void timerWaitUs (uint32_t us_wait)
     } // wait time is more than the max load cnt
 }
 
-//unity test function of the timer delay
-void unit_test_timerWaitUs() {
+
+//unity test function of the timer delay via non-blocking(interrupts)
+void unit_test_timerWaitIrq() {
 
   GPIO_PinOutToggle (gpioPortF, 5);// small delay
-  timerWaitUs (10000);  // 10ms
+  timerWaitUs_irq(10000);  // 10ms
   GPIO_PinOutToggle (gpioPortF, 5);
 
   GPIO_PinOutToggle (gpioPortF, 5);// medium delay
-  timerWaitUs (100000);  // 100ms
+  timerWaitUs_irq(100000);  // 100ms
   GPIO_PinOutToggle (gpioPortF, 5);
 
   GPIO_PinOutToggle (gpioPortF, 5);// large delay
-  timerWaitUs (1000000);  // 1s
+  timerWaitUs_irq(1000000);  // 1s
   GPIO_PinOutToggle (gpioPortF, 5);
 
   GPIO_PinOutToggle (gpioPortF, 5);// out-of-range value
-  timerWaitUs (4000000);
+  timerWaitUs_irq(4000000);       //4s
   GPIO_PinOutToggle (gpioPortF, 5);
 
   GPIO_PinOutToggle (gpioPortF, 5);// negative value
-  timerWaitUs (-10000);
+  timerWaitUs_irq(-10000);
   GPIO_PinOutToggle (gpioPortF, 5);
 
 }
-

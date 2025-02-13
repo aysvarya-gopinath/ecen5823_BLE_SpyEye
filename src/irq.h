@@ -19,8 +19,11 @@
 #ifndef SRC_IRQ_H_
 #define SRC_IRQ_H_
 
+#define SEC_TO_MS  3000 //3000ms in 3 seconds
 //letimer interrupt handler
 void LETIMER0_IRQHandler(void) ;
 
+//returns time in ms since powered
+uint32_t letimerMilliseconds(void);
 
 #endif /* SRC_IRQ_H_ */

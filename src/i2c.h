@@ -21,17 +21,14 @@
 //initialize i2c
 void i2c_init(void);
 
-// performs i2c read
-I2C_TransferReturn_TypeDef i2c_read( uint8_t *read_cmd, uint16_t read_cmd_len);
+//write command via i2c
+void send_I2C_command (void);
+//read temperature via i2c
+void read_temp_data(void);
 
-//performs i2c write
-I2C_TransferReturn_TypeDef i2c_write( uint8_t *write_cmd, uint16_t write_cmd_len);
+//log the read temperature values
+void log_temperature(void);
 
-//function to read the temperature from the sensor
-void  read_temp_from_si7021(double *temperature);
-
-//function to write command to the sensor
-void  write_cmd_to_si7021(void);
-
-
+//i2c interrupt handler
+void I2C0_IRQHandler(void);
 #endif /* SRC_I2C_H_ */

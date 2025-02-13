@@ -34,15 +34,17 @@
 void initLETIMER0 (void);
 
 /**************************************************************************//**
- *  LETIMER0 wait
+ *  LETIMER0 wait by POLLING
  *****************************************************************************/
-void timerWaitUs(uint32_t us_wait);
-
+void timerWaitUs_polled(uint32_t us_wait);
 
 /**************************************************************************//**
- *  LETIMER0 unit test
+ *  LETIMER0 wait by INTERRUPTS
  *****************************************************************************/
-void unit_test_timerWaitUs();
-
+void timerWaitUs_irq(uint32_t us_wait);
+/**************************************************************************//**
+ *  LETIMER0 unit test for non-blocking
+ *****************************************************************************/
+void unit_test_timerWaitIrq();
 
 #endif
