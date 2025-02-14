@@ -13,6 +13,7 @@
 #include"em_i2c.h"
 #include"stdint.h"
 #include"em_cmu.h"
+#include"scheduler.h"
 // Include logging specifically for this .c file
 #define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"

@@ -16,7 +16,7 @@ See [Mastering Markdown](https://guides.github.com/features/mastering-markdown/)
    ![Avg_current_LPM_Off](screenshots/assignment4/avg_current_lpm_off.png)  
 
 3. What is the ave current from the time we power-on the 7021 until we get the COMP1 IRQ indicating that the 7021's maximum time for conversion (measurement) has expired.
-   Answer:228.34uA
+   Answer:121.77uA
    <br>Screenshot:  
    ![Avg_current_LPM_On](screenshots/assignment4/avg_current_lpm_on.png)  
 
@@ -29,7 +29,7 @@ See [Mastering Markdown](https://guides.github.com/features/mastering-markdown/)
    Answer (in hours):
    Average current = 20.29uA = 0.02029mA
    Battery capacity = 1000mA per hour
-   operating time = battery capacity/average current =1000mAh/0.02029mA =49,285hrs
+   operating time = battery capacity/average current =1000mAh/0.02029mA =49,285 hours
    
 6. How has the power consumption performance of your design changed since the previous assignment?
    Answer:
@@ -38,9 +38,12 @@ See [Mastering Markdown](https://guides.github.com/features/mastering-markdown/)
  |--------------------------------------------------------------------------------------------------|
  | Per period                    |         155.17uA             |            20.29uA                |
  | During sleep until power-on   |         7.59uA               |            2.94uA                 |
- |From power-on till wait expires|         4.87mA               |            228.34uA               |
+ |From power-on till wait expires|         4.87mA               |            121.77uA               |
  |operating time for 1000mAh Bt  |         6,445hrs             |            49,285hrs              |
  |--------------------------------------------------------------------------------------------------|                                                              
-   From the above table, it is evident that the power consumption when using  non-blocking calls(interrupt based waits and i2c transfers) in assignment-4 is less compared to the blocking calls(polling based waits and i2c transfers) in assignmnet-3. Performing the I2C transfers  and sleeping in EM1 ; adn also slpeeping in EM3 during the wait periods has effectiveky influenced the power consumption. The operating time for the 1000mAh battery capacity is more for the average current in measured with non-blocking calls.
+   From the above table, it is evident that the average currents is less in assignment-4 than in the previous assignment.
+   Thus the power consumption when using  non-blocking calls(interrupt based waits and i2c transfers) in assignment-4 is less compared to the blocking calls(polling based waits and i2c transfers) in assignmnet-3. 
+   Performing the I2C transfers  and sleeping in EM1 ; and also sleeping in EM3 during the wait periods has effectively influenced the power consumption. 
+   The operating time for the 1000mAh battery capacity is more when the average current is measured with non-blocking calls.
 
 

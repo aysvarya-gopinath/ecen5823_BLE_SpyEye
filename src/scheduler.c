@@ -104,7 +104,6 @@ void Si7021_state_machine(uint32_t event)
       if (event == IRQ_WAIT_OVER) //non-blocking irq wait generates a COMP1 interrupt
         {
           sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1); //add power requirement for EM1
-          i2c_init (); //initialize i2c
           send_I2C_command (); //write i2c command
           nextState = SensorWait;
         }
@@ -131,9 +130,9 @@ void Si7021_state_machine(uint32_t event)
       nextState = SensorOFF; // initial idle state
       if (event == I2C_COMPLETE) //if 3s UF interrupt
         {
+          gpioSi7021OFF (); //power on the sensor
           sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1); //Remove Power Req of EM1
           log_temperature (); //log the temperature
-          gpioSi7021OFF (); //power on the sensor
           nextState = Idle;
         }
       break;
