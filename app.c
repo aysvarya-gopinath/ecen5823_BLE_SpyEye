@@ -221,9 +221,7 @@ SL_WEAK void app_process_action(void)
    */
   // unit_test_timerWaitIrq();
 
-//  timerWaitUs_irq(80000);
-
-uint32_t evt = getNextEvent();
+uint32_t evt = getNextEvent(); //get the events set by the interrupts
  Si7021_state_machine(evt); //start the state machine
  } // app_process_action()
 

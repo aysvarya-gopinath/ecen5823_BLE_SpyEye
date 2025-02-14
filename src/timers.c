@@ -26,6 +26,9 @@
 #define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"
 
+/* Configures the LETIMER0 parameters
+ *  No parameters and return type
+ */
 void initLETIMER0 ()
 {
   uint32_t temp; // this data structure is passed to LETIMER_Init (), used to set LETIMER0_CTRL reg bits and other values
@@ -55,7 +58,11 @@ void initLETIMER0 ()
 
 }
 
-//timer wait by interrupts in micro-seconds
+
+/*Timer delay function based on the interrupts
+ * The wait time in micro seconds is the paramter
+ * No return type
+ */
 void timerWaitUs_irq(uint32_t us_wait)
 {
   uint32_t current_ticks, max_load, wait_cnt, wrap_cnt; // all time values with respect to ticks
@@ -78,9 +85,8 @@ void timerWaitUs_irq(uint32_t us_wait)
           LETIMER_CompareSet (LETIMER0, 1, wrap_cnt); //load wait_cnt in the timer COMP1
           LETIMER_IntClear (LETIMER0, 0xFFFFFFFF);
           LETIMER_IntEnable (LETIMER0, LETIMER_IEN_COMP1); // generate an interrupt
-          //LETIMER0->IEN |= LETIMER_IEN_COMP1; //new
         }
-      LETIMER_Enable (LETIMER0, true);
+      LETIMER_Enable (LETIMER0, true); //enable the timer
     } //in the range
 
   else //wait time is out of range
@@ -89,7 +95,11 @@ void timerWaitUs_irq(uint32_t us_wait)
     } // wait time is more than the max load cnt
 }
 
-//timer wait by polling in micro-seconds
+
+/*Timer delay function based on the polling
+ * The wait time in micro seconds is the paramter
+ * No return type
+ */
 void timerWaitUs_polled(uint32_t us_wait)
 {
   uint32_t current_ticks, max_load, wait_cnt, wrap_cnt; // all time values with respect to ticks
@@ -101,15 +111,15 @@ void timerWaitUs_polled(uint32_t us_wait)
 
       if ((wait_cnt <= max_load) && (wait_cnt <= current_ticks)) //wait time is less than the current time
         {
-          while (LETIMER_CounterGet (LETIMER0) > (current_ticks - wait_cnt))
+          while (LETIMER_CounterGet (LETIMER0) > (current_ticks - wait_cnt)) //wait until wait count
             {} // wait
         }
       else
         {
-          while (!(LETIMER_IntGet (LETIMER0) & LETIMER_IF_UF))
-            {}  // Busy wait for underflow
-          wrap_cnt = wait_cnt - current_ticks;
-          while (LETIMER_CounterGet (LETIMER0) != wrap_cnt) //wrapping up
+          while (!(LETIMER_IntGet (LETIMER0) & LETIMER_IF_UF))// Busy wait for underflow
+            {}
+          wrap_cnt = wait_cnt - current_ticks; //wrapping up
+          while (LETIMER_CounterGet (LETIMER0) != wrap_cnt)
             {} //the additional time to wait
         }
     } //in the range
@@ -121,7 +131,10 @@ void timerWaitUs_polled(uint32_t us_wait)
 }
 
 
-//unity test function of the timer delay via non-blocking(interrupts)
+
+/*Unity test function of the timer delay via non-blocking(interrupts)
+ * No parameters and return type
+ */
 void unit_test_timerWaitIrq() {
 
   GPIO_PinOutToggle (gpioPortF, 5);// small delay

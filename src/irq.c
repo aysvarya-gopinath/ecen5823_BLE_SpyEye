@@ -19,7 +19,10 @@
 #include "src/log.h"
 
  uint32_t roll_over=0; // counter to hold the underflow counts
-//interrupt handler
+
+ /*Letimer interrupt handler
+  * No parameters and return types
+  */
 void LETIMER0_IRQHandler (void)
 {
   CORE_DECLARE_IRQ_STATE;
@@ -39,7 +42,10 @@ void LETIMER0_IRQHandler (void)
   CORE_EXIT_CRITICAL(); //exiting critical sections
 }
 
-//return a count of milliseconds since power up
+
+/*Counts the time elapsed since the sensor power-up
+ *Returns time in  milliseconds
+ */
 uint32_t letimerMilliseconds(void)
 {
   uint32_t elapsed_time = COMP0_LOAD - LETIMER_CounterGet (LETIMER0); //count value passed since last UF for resolution

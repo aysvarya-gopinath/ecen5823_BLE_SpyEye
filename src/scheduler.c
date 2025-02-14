@@ -18,7 +18,7 @@
 
 uint32_t  myEvents=NO_EVENT,setEvent=NO_EVENT; //variables to set events
 
-//states of the state machine
+//state variables of the state machine
 typedef enum uint32_t {
   Idle,     //idle state
   I2Cwrite,   //i2c write occurs
@@ -27,7 +27,10 @@ typedef enum uint32_t {
  SensorOFF,  //sensor is turned off
   } State_t;
 
-//scheduler routine to set a scheduler event to the read the temperature
+
+/*Scheduler routine to set scheduler event based on the underflow interrupt
+ * No return types and parameters
+ */
 void schedulerSetEvent_underflow() {
   CORE_DECLARE_IRQ_STATE;
   CORE_ENTER_CRITICAL();//enter critical section
@@ -35,7 +38,9 @@ void schedulerSetEvent_underflow() {
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
-//Scheduler routine to set an event for timer wait by interrupts (non-blocking)
+/*Scheduler routine to set an scheduler event based on the COMP1 interrupt(non-blocking)
+ * No return types and parameters
+ */
 void schedulerSetEvent_WaitIrq(){
   CORE_DECLARE_IRQ_STATE;
     CORE_ENTER_CRITICAL();//enter critical section
@@ -43,7 +48,9 @@ void schedulerSetEvent_WaitIrq(){
     CORE_EXIT_CRITICAL(); // exit critical section
 }
 
-//Scheduler routine to set an event for i2c transfer completion
+/*Scheduler routine to set an scheduler event based on i2c transfer interrupt
+ * No return types and parameters
+ */
 void schedulerSetEvent_i2cTransfer(){
   CORE_DECLARE_IRQ_STATE;
     CORE_ENTER_CRITICAL();//enter critical section
@@ -52,7 +59,9 @@ void schedulerSetEvent_i2cTransfer(){
 }
 
 
-// scheduler routine to return 1 event to process
+/*Scheduler routine to return the event set by interrupts to process
+ * No return types and parameters
+ */
 uint32_t getNextEvent() {
   CORE_DECLARE_IRQ_STATE;
   //take measurement every 3seconds when underflow occurs
@@ -82,11 +91,14 @@ uint32_t getNextEvent() {
   return (setEvent);
 }
 
-//state machine to read temperature from Si7021 sensor via I2C
+/*State machine to read temperature from Si7021 sensor via I2C
+ * An EVENT set by the interrupts is passed as a parameter
+ * No return type
+ */
 void Si7021_state_machine(uint32_t event)
 {
   State_t currentState;
-  static State_t nextState = Idle;
+  static State_t nextState = Idle; //initial idle state
   currentState = nextState;
   switch (currentState)
     {
@@ -100,8 +112,8 @@ void Si7021_state_machine(uint32_t event)
         }
       break;
     case I2Cwrite:
-      nextState = I2Cwrite; //sensor powering on
-      if (event == IRQ_WAIT_OVER) //non-blocking irq wait generates a COMP1 interrupt
+      nextState = I2Cwrite;
+      if (event == IRQ_WAIT_OVER) //non-blocking irq wait generates a COMP1 interrupt when expired
         {
           sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1); //add power requirement for EM1
           send_I2C_command (); //write i2c command
@@ -109,8 +121,8 @@ void Si7021_state_machine(uint32_t event)
         }
       break;
     case SensorWait:
-      nextState = SensorWait; //i2c writing command
-      if (event == I2C_COMPLETE)
+      nextState = SensorWait;
+      if (event == I2C_COMPLETE)//i2c write command is completed
         {
           sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1); //Remove Power Req of EM1
           timerWaitUs_irq (10800); //conversion delay
@@ -119,7 +131,7 @@ void Si7021_state_machine(uint32_t event)
       break;
     case I2Cread:
       nextState = I2Cread; //i2c reading temperature data
-      if (event == IRQ_WAIT_OVER) //non-blocking irq wait generates a COMP1 interrupt
+      if (event == IRQ_WAIT_OVER) //non-blocking irq wait generates a COMP1 interrupt when expired
         {
           sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1); //add power requirement for EM1
           read_temp_data (); //i2c read temperature
@@ -127,10 +139,10 @@ void Si7021_state_machine(uint32_t event)
         }
       break;
     case SensorOFF:
-      nextState = SensorOFF; // initial idle state
-      if (event == I2C_COMPLETE) //if 3s UF interrupt
+      nextState = SensorOFF;
+      if (event == I2C_COMPLETE) //i2c read command is completed
         {
-          gpioSi7021OFF (); //power on the sensor
+          gpioSi7021OFF (); //power off the sensor
           sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1); //Remove Power Req of EM1
           log_temperature (); //log the temperature
           nextState = Idle;

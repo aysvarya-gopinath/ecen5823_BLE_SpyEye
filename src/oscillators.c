@@ -10,6 +10,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/*Configures the oscillator parameters
+ * No parameters and return type
+ */
 void oscillator_config(){
   CMU_OscillatorEnable(cmuOsc_ULFRCO,true,true); //enable clock
   CMU_ClockSelectSet(cmuClock_LFA,cmuSelect_ULFRCO); //set source //1000hz
