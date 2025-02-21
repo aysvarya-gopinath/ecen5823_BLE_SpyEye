@@ -49,8 +49,8 @@
 #include"src/oscillators.h"
 #include"src/scheduler.h"
 #include"src/i2c.h"
-
-
+#include"sl_bt_api.h"
+#include "src/ble.h"
 #include "em_gpio.h"
 // *************************************************
 // Students: It is OK to modify this file.
@@ -163,7 +163,11 @@ SL_WEAK void app_init(void)
 {
   // Put your application 1-time initialization code here.
   // This is called once during start-up.
-  // Don't call any Bluetooth API functions until after the boot event.
+  // Don't call anyBluetooth API functions until after the boot event.
+
+// if defined em3 change to em2
+
+
 
   gpioInit (); //gpio initialization
   //power requirement for EM1 or  EM2
@@ -221,8 +225,8 @@ SL_WEAK void app_process_action(void)
    */
   // unit_test_timerWaitIrq();
 
-uint32_t evt = getNextEvent(); //get the events set by the interrupts
- Si7021_state_machine(evt); //start the state machine
+//uint32_t evt = getNextEvent(); //get the events set by the interrupts
+ //Si7021_state_machine(evt); //start the state machine
  } // app_process_action()
 
 
@@ -243,16 +247,16 @@ void sl_bt_on_event(sl_bt_msg_t *evt)
 {
 
   // Just a trick to hide a compiler warning about unused input parameter evt.
-  (void) evt;
+  //(void) evt;
 
   // For A5 onward:
   // Some events require responses from our application code,
   // and don’t necessarily advance our state machines.
   // For A5 uncomment the next 2 function calls
-  // handle_ble_event(evt); // put this code in ble.c/.h
+   handle_ble_event(evt); //event responder
 
   // sequence through states driven by events
-  // state_machine(evt);    // put this code in scheduler.c/.h
+   Si7021_state_machine(evt);  // put this code in scheduler.c/.h
 
 
 } // sl_bt_on_event()

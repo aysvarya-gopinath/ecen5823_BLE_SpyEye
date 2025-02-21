@@ -9,7 +9,7 @@
 #ifndef SRC_SCHEDULER_H_
 #define SRC_SCHEDULER_H_
 #include "stdint.h"
-
+#include"sl_bt_api.h"
 #define NO_EVENT        (0)// Value for no event
 
 #define UF_LETIMER     (0x01) //3s underflow
@@ -30,7 +30,7 @@ void schedulerSetEvent_WaitIrq(void);
 void schedulerSetEvent_i2cTransfer(void);
 
 //state machine for the temperature read
-void Si7021_state_machine(uint32_t event);
+void Si7021_state_machine(sl_bt_msg_t *evt);
 
 //get the events set by the handler
 uint32_t getNextEvent(void);
