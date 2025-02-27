@@ -41,8 +41,8 @@ bd_addr  myAddress; //BT device address
 uint8_t  advertisingSetHandle; //to store the handle
 uint8_t myAddressType; //identity address type
 bool connect_open; //flag to track if connection is opened(true) or closed(false)
-int indication; //indication status inflight (1) or not (0)
-bool htm_indications; //true when htm indications are enabled
+int inflight_indication; //indication status inflight (1) or not (0)(server sends indications to client)
+bool htm_indications; //true when htm indications are enabled (client enables/disables notifications/indications from server)
 uint8_t connectionHandle; //connection handle
 } ble_data_struct_t;
 

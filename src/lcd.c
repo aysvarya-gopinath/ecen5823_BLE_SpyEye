@@ -49,8 +49,7 @@
 
 
 /*
- * Student edit: Add your name and email address here:
- * @student    Awesome Student, Awesome.Student@Colorado.edu
+ * Author:@Aysvarya Gopinath   Aysvarya.Gopinath@Colorado.edu
 */
 
 
@@ -65,9 +64,9 @@
 #include "glib.h" // the low-level graphics driver/library
 #include "dmd.h"  // the dot matrix display driver
 
-
+#include "sl_bt_api.h"
 #include "lcd.h"
-
+#include"gpio.h"
 
 // Include logging specifically for this .c file
 #define INCLUDE_LOG_DEBUG 1
@@ -257,9 +256,10 @@ void displayInit()
     //           the time now for the LCD to function properly.
     //           Create that function in gpio.c/.h Then add that function call here.
     //
-    //gpioSensorEnSetOn(); // we need SENSOR_ENABLE=1 which is tied to DISP_ENABLE
-    //                     // for the LCD, on all the time now
+    // we need SENSOR_ENABLE=1 which is tied to DISP_ENABLE
+  // for the LCD, on all the time now
 
+    gpioSi7021ON(); // the lcd enable pin is PD15 which is same as the sensor pin
 
 
     // Init the dot matrix display data structure
@@ -315,13 +315,13 @@ void displayInit()
     // Students: Figure out what parameters to pass in to sl_bt_system_set_soft_timer() to
     //           set up a 1 second repeating soft timer and uncomment the following lines
 
-	  //sl_status_t          timer_response;
-	  //timer_response = sl_bt_system_set_soft_timer();
-	  //if (timer_response != SL_STATUS_OK) {
-	  //    LOG_...
-    // }
-
-
+	  sl_status_t          timer_response;
+	  //start the lazy soft timer to expire after 1s second
+	  timer_response =  sl_bt_system_set_lazy_soft_timer(SOFT_TIME,SLACK,HANDLE,SINGLE_SHOT);
+	  if (timer_response != SL_STATUS_OK) {
+	      LOG_ERROR("\n\r sl_bt_system_set_soft_timer() returned != 0 timer_response=0x%04x\n",
+	                      (unsigned int) timer_response);
+   }
 
 } // displayInit()
 
@@ -345,10 +345,9 @@ void displayUpdate()
 	//           the EXTCOMIN input to the LCD. Add that function to gpio.c./.h
 	//           Then uncomment the following line.
 	//
-	//gpioSetDisplayExtcomin(display->last_extcomin_state_high);
+	gpioSetDisplayExtcomin(display->last_extcomin_state_high); //toggle the extcomin pin
 	
 } // displayUpdate()
-
 
 
 

@@ -43,7 +43,7 @@ void gpioLed1SetOff();
 void gpioSi7021ON();
 void gpioSi7021OFF();
 
-
-
+// set/ clear the extcomin pin
+void gpioSetDisplayExtcomin(bool extcomin_state);
 
 #endif /* SRC_GPIO_H_ */

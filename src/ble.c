@@ -9,9 +9,12 @@
 #include "sl_bt_api.h"
 #include "gatt_db.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 1 //
+#define INCLUDE_LOG_DEBUG 0 //
 #include "src/log.h"
 
+#include "lcd.h"
+#include"ble.h"
+#include"ble_device_type.h"
 ble_data_struct_t ble_data;// BLE private data
 
 
@@ -23,6 +26,8 @@ ble_data_struct_t* get_ble_dataPtr(void) {
     return &ble_data;
 }
 
+///
+///
 /*Event responder to handle the bluetooth stack activity events
  *The external event is passed as a parameter
  *No returns types
@@ -42,6 +47,8 @@ void handle_ble_event(sl_bt_msg_t *evt) {
    /////////////////RADIO HAS STARTED//////////////////////////////
     case sl_bt_evt_system_boot_id:
       {
+        displayInit ();  //initialise the lcd display
+
         // extract BT device address
         sc = sl_bt_system_get_identity_address (&ble_data.myAddress,
                                                 &ble_data.myAddressType);
@@ -61,8 +68,10 @@ void handle_ble_event(sl_bt_msg_t *evt) {
           }
         //set the timing parameters for advertising
         sc = sl_bt_advertiser_set_timing (ble_data.advertisingSetHandle,
-                                          ADVERTISING_MIN, ADVERTISING_MAX,
-                                          DURATION, MAX_EVENTS); //default durations
+        ADVERTISING_MIN,
+                                          ADVERTISING_MAX,
+                                          DURATION,
+                                          MAX_EVENTS); //default durations
         if (sc != SL_STATUS_OK)
           {
             LOG_ERROR(
@@ -88,8 +97,19 @@ void handle_ble_event(sl_bt_msg_t *evt) {
                 "\n\r sl_bt_legacy_advertiser_start() returned != 0 status=0x%04x\n",
                 (unsigned int) sc);
           }
+
+        displayPrintf (DISPLAY_ROW_NAME, BLE_DEVICE_TYPE_STRING); // prints Server on display
+        //displays the BT stack address on the lcd in little endian
+        displayPrintf (DISPLAY_ROW_BTADDR, "%02X:%02X:%02X:%02X:%02X:%02X",
+                       ble_data.myAddress.addr[0], ble_data.myAddress.addr[1],
+                       ble_data.myAddress.addr[2], ble_data.myAddress.addr[3],
+                       ble_data.myAddress.addr[4], ble_data.myAddress.addr[5]);
+        displayPrintf (DISPLAY_ROW_ASSIGNMENT, ASSIGNMENT); //displays assignment number
+
+        displayPrintf (DISPLAY_ROW_CONNECTION, "Advertising");
         break;
       }
+
     ///////////////////////////CONNECTION OPENED////////////////////////
     case sl_bt_evt_connection_opened_id:  //new connection has opened
       {
@@ -103,21 +123,35 @@ void handle_ble_event(sl_bt_msg_t *evt) {
                 (unsigned int) sc);
           }
         //request parameters
-        sc = sl_bt_connection_set_parameters (
-            ble_data.connectionHandle,
-            CONNECT_MIN_INTERVAL, CONNECT_MAX_INTERVAL, LATENCY, TIMEOUT, 0,
-            0xffff); //default max and min connection event length
+        sc = sl_bt_connection_set_parameters (ble_data.connectionHandle,
+                                              CONNECT_MIN_INTERVAL,
+                                              CONNECT_MAX_INTERVAL,
+                                              LATENCY,
+                                              TIMEOUT,
+                                              0,
+                                              0xffff); //default max and min connection event length
         if (sc != SL_STATUS_OK)
           LOG_ERROR(
               "\n\r sl_bt_connection_set_parameters != 0 status=0x%04x \n",
               (unsigned int) sc);
+
+        displayPrintf (DISPLAY_ROW_CONNECTION, "Connected");
         break;
       }
+
+      /////////////////////////LAZY SOFT TIMER EXPIRY///////////////////////////////////
+    case sl_bt_evt_system_soft_timer_id : //soft timer expired
+      {
+        displayUpdate();  //refresh the lcd to prevent charge buildup
+        break;
+      }
+
       ///////////////////////////////CONNECTION CLOSED////////////////////////////////////
     case sl_bt_evt_connection_closed_id: //connection has closed
       {
         ble_data.connect_open = false; //connection is closed
-        //generate advertising data
+        ble_data.inflight_indication = false; //not inflight
+        ble_data.htm_indications = false; //
         sc = sl_bt_legacy_advertiser_generate_data (
             ble_data.advertisingSetHandle,
             sl_bt_advertiser_general_discoverable);
@@ -136,25 +170,26 @@ void handle_ble_event(sl_bt_msg_t *evt) {
                 "\n\r sl_bt_legacy_advertiser_start() returned != 0 status=0x%04x\n",
                 (unsigned int) sc);
           }
+        displayPrintf (DISPLAY_ROW_CONNECTION, "Advertising");
+        displayPrintf (DISPLAY_ROW_TEMPVALUE, ""); //clear the temperature value
         break;
       }
       /////////////////////CONNECTION PARAMETERS////////////////////////////////////////////
     case sl_bt_evt_connection_parameters_id: //connection parameters set by master
       {
-        LOG_INFO("\n\r MASTER SET CONNECTION PARAMETERS \n");
-        LOG_INFO("\n\rConnection interval %d ms",
-                 (int)((evt->data.evt_connection_parameters.interval)*1.25)); //connection interval
-        LOG_INFO("\n\rSlave latency %u ms",
-                 evt->data.evt_connection_parameters.latency); //peripheral latency
-        LOG_INFO("\n\r Timeout %u ms",
-                 (evt->data.evt_connection_parameters.timeout)*10); //supervision timeout
+//        LOG_INFO("\n\r MASTER SET CONNECTION PARAMETERS \n");
+//        LOG_INFO("\n\rConnection interval %d ms",
+//                 (int)((evt->data.evt_connection_parameters.interval)*1.25)); //connection interval
+//        LOG_INFO("\n\rSlave latency %u ms",
+//                 evt->data.evt_connection_parameters.latency); //peripheral latency
+//        LOG_INFO("\n\r Timeout %u ms",
+//                 (evt->data.evt_connection_parameters.timeout)*10); //supervision timeout
         break;
       }
       ////////////////GATT SERVER CHARACTERSITICS////////////////////////////
     case sl_bt_evt_gatt_server_characteristic_status_id:
       {
         //Track whether indications are enabled/disabled for each and every characteristics
-
         if (evt->data.evt_gatt_server_characteristic_status.characteristic
             == gattdb_temperature_measurement)
           {
@@ -165,24 +200,29 @@ void handle_ble_event(sl_bt_msg_t *evt) {
                     == sl_bt_gatt_server_indication)
                     || (evt->data.evt_gatt_server_characteristic_status.client_config_flags
                         == sl_bt_gatt_server_notification_and_indication))
-                  ble_data.htm_indications = true;  //enabled htm indications
+                  {
+                    ble_data.htm_indications = true;  //enabled htm indications
+                  } // sl_bt_gatt_server_indication
                 else
-                  ble_data.htm_indications = false;  //disabled htm indication
-              }
+                  {
+                    ble_data.htm_indications = false;  //disabled htm indication
+                    displayPrintf (DISPLAY_ROW_TEMPVALUE, "");
+                  }
+              }  //sl_bt_gatt_server_client_config
             if (evt->data.evt_gatt_server_characteristic_status.status_flags
                 == sl_bt_gatt_server_confirmation) //client acknowledged indication
               {
-                ble_data.indication = NOT_INFLIGHT; //clear inflight flag
-              }
+                ble_data.inflight_indication = NOT_INFLIGHT; //clear inflight flag
 
-          }
+              } //sl_bt_gatt_server_confirmation
+
+          } //gattdb_temperature_measurement
         break;
       }
       /////////////////SERVER TIMEOUT/////////////////////
     case sl_bt_evt_gatt_server_indication_timeout_id:
       {
-        ble_data.indication = NOT_INFLIGHT; // indication in flight
-
+        ble_data.inflight_indication = NOT_INFLIGHT; // indication in flight
         break;
       }
     } // end - switch
@@ -216,8 +256,8 @@ void send_temp_ble(int32_t temp_deg){
     }
 
   if (ble_data.connect_open == true && ble_data.htm_indications == true)
-    { //if connections are open
-      if (!ble_data.indication)//not in transit
+    { //if connections are open and htm indications are enabled
+      if (!ble_data.inflight_indication) //not in transit
         {   //send indication with temperature
           sc = sl_bt_gatt_server_send_indication (ble_data.connectionHandle,
           gattdb_temperature_measurement, // handle from gatt_db.h
@@ -231,9 +271,8 @@ void send_temp_ble(int32_t temp_deg){
             }
           else
             {
-              ble_data.indication = INFLIGHT; //mark as in transit
+              ble_data.inflight_indication = INFLIGHT; //mark as in transit
             }
         }
     }
 }
-

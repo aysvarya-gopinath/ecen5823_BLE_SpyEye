@@ -123,7 +123,6 @@ void Si7021_state_machine(sl_bt_msg_t *evt)
               nextState = SensorOFF;
               if (eventValue && I2C_COMPLETE) //i2c read command is completed
                 {
-                  gpioSi7021OFF (); //power off the sensor
                   sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1); //Remove Power Req of EM1
                   log_temperature (); //log the temperature
                   nextState = Idle;

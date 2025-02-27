@@ -38,6 +38,11 @@
 #define SRC_LCD_H_
 
 
+#define SOFT_TIME (32768) //ticks for the soft timer operating at 1Hz delay
+#define SINGLE_SHOT (0) //false -timer is repetitive
+#define SLACK (10) //additional delay
+#define HANDLE (0) // only 1 soft timer handle can be 0
+
 
 /**
  * Display row definitions, used for writing specific content based on
@@ -62,7 +67,7 @@ enum display_row {
 
 // The number of characters per row
 #define DISPLAY_ROW_LEN      20
-
+#define ASSIGNMENT ("A6")
 
 
 // function prototypes
