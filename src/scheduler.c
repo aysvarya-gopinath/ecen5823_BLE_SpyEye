@@ -73,8 +73,6 @@ void schedulerSetEvent_i2cTransfer(){
 void Si7021_state_machine(sl_bt_msg_t *evt)
 {
   ble_data_struct_t *ble_data_ptr = get_ble_dataPtr (); //pointer to the ble data structure
-  if ((ble_data_ptr->connect_open) && (ble_data_ptr->htm_indications))
-    { //connection is open and HTM indication are enabled
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_system_external_signal_id) //external signals event is set
         {
           uint32_t eventValue = evt->data.evt_system_external_signal.extsignals; //holds all the enabled signals
@@ -124,7 +122,10 @@ void Si7021_state_machine(sl_bt_msg_t *evt)
               if (eventValue && I2C_COMPLETE) //i2c read command is completed
                 {
                   sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1); //Remove Power Req of EM1
+                  if ((ble_data_ptr->connect_open) && (ble_data_ptr->htm_indications))
+                     { //connection is open and HTM indication are enabled
                   log_temperature (); //log the temperature
+                     } //connection open
                   nextState = Idle;
                 }
               break;
@@ -134,7 +135,7 @@ void Si7021_state_machine(sl_bt_msg_t *evt)
 
             } // switch
         } //external_signal header
-    } //connection open
+
 } //state machine
 
 

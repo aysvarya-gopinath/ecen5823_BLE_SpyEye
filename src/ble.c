@@ -68,7 +68,7 @@ void handle_ble_event(sl_bt_msg_t *evt) {
           }
         //set the timing parameters for advertising
         sc = sl_bt_advertiser_set_timing (ble_data.advertisingSetHandle,
-        ADVERTISING_MIN,
+                                          ADVERTISING_MIN,
                                           ADVERTISING_MAX,
                                           DURATION,
                                           MAX_EVENTS); //default durations
