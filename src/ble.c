@@ -258,7 +258,9 @@ void send_temp_ble(int32_t temp_deg){
   if (ble_data.connect_open == true && ble_data.htm_indications == true)
     { //if connections are open and htm indications are enabled
       if (!ble_data.inflight_indication) //not in transit
-        {   //send indication with temperature
+        {
+          displayPrintf(DISPLAY_ROW_TEMPVALUE,"Temperature=%u",temp_deg); //disaply the temperature on screen
+          //send indication with temperature
           sc = sl_bt_gatt_server_send_indication (ble_data.connectionHandle,
           gattdb_temperature_measurement, // handle from gatt_db.h
                                                   5, htm_temperature_buffer // in IEEE-11073 format
