@@ -15,15 +15,18 @@
 #define ADVERTISING_MIN   400 //Value in units of 0.625 ms
 #define ADVERTISING_MAX  400  //250ms /0.625=400
 // Set Connection Interval minimum and maximum to 75mS
-#define CONNECT_MIN_INTERVAL 60 // 75ms/1.25 =60(value)
-#define CONNECT_MAX_INTERVAL 60
+#define MIN_INTERVAL 60 // 75ms/1.25 =60(value)
+#define MAX_INTERVAL 60
 // Set the Slave latency to enable it to be “off the air” for up to 300mS
 #define  LATENCY 4 // 300ms/75ms
 // Set the Supervision timeout to a value greater than (1 + slave latency) *(connection_interval * 2)
 #define TIMEOUT 80       //((1 + 4) * (75*2)/10)
+#define MIN_CE_LEN 0
+#define MAX_CE_LEN 4
 #define MAX_EVENTS 0
 #define DURATION 0
-
+#define SCAN_WINDOW 40 //(25ms/0.625ms)
+#define SCAN_INTERVAL  80 //(50ms/0.625ms)
 #define UINT8_TO_BITSTREAM(p, n)      { *(p)++ = (uint8_t)(n); }
 #define UINT32_TO_BITSTREAM(p, n)     { *(p)++ = (uint8_t)(n); *(p)++ = (uint8_t)((n) >> 8); \
                                         *(p)++ = (uint8_t)((n) >> 16); *(p)++ = (uint8_t)((n) >> 24); }
@@ -44,6 +47,8 @@ bool connect_open; //flag to track if connection is opened(true) or closed(false
 int inflight_indication; //indication status inflight (1) or not (0)(server sends indications to client)
 bool htm_indications; //true when htm indications are enabled (client enables/disables notifications/indications from server)
 uint8_t connectionHandle; //connection handle
+uint8_t serviceHandle; //service handle
+uint16_t characteristicsHandle; //characteristics handle
 } ble_data_struct_t;
 
 
@@ -55,5 +60,8 @@ void handle_ble_event(sl_bt_msg_t *evt);
 
 //function to send the temperature to the gatt db and app
 void send_temp_ble(int32_t temp_deg);
+
+//function to convert the float temperature into integer
+static int32_t FLOAT_TO_INT32(const uint8_t *buffer_ptr);
 #endif /* SRC_BLE_H_ */
 

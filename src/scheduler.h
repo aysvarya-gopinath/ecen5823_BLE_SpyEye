@@ -16,6 +16,26 @@
 #define IRQ_WAIT_OVER    (0x02) //non-blocking wait
 #define I2C_COMPLETE    (0x04) //i2c transfer complete
 
+//state variables of the temperature state machine
+typedef enum uint32_t {
+  Idle,     //idle state
+  I2Cwrite,   //i2c write occurs
+  SensorWait,  // sensor waits
+  I2Cread,   //i2c read has occurs
+ SensorOFF,  //sensor is turned off
+  } State_t;
+
+  //state variables of the discovery state machine
+  typedef enum uint16_t{
+    IDLE_STATE,     //idle state
+    SERVICES_FOUND,   //discovered services by uuid
+    CHARACTERITICS_FOUND,  // discovered characterictics by uuid
+    INDICATIONS_ENABLED,   //gatt characteristics notifications enabled
+    WAIT_STATE,  //waiting for external event
+    } discoverState_t;
+
+
+
 /****************************************************************************
  * Set Event scheduler for the timer
  *****************************************************************************/
@@ -34,5 +54,8 @@ void Si7021_state_machine(sl_bt_msg_t *evt);
 
 //get the events set by the handler
 uint32_t getNextEvent(void);
+
+//discovery state machine
+void discovery_state_machine(sl_bt_msg_t *evt);
 
 #endif /* SRC_SCHEDULER_H_ */

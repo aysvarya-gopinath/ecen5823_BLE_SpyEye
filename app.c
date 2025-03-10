@@ -255,8 +255,15 @@ void sl_bt_on_event(sl_bt_msg_t *evt)
   // For A5 uncomment the next 2 function calls
    handle_ble_event(evt); //event responder
 
-  // sequence through states driven by events
-   Si7021_state_machine(evt);  // put this code in scheduler.c/.h
+#if DEVICE_IS_BLE_SERVER
+// SERVER
+// sequence through states driven by events
+   Si7021_state_machine(evt);
+#else
+//CLIENT
+// sequence through service and characteristic discovery
+discovery_state_machine(evt);
+#endif
 
 
 } // sl_bt_on_event()
