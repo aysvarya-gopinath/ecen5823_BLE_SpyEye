@@ -180,7 +180,9 @@ void discovery_state_machine(sl_bt_msg_t *evt)
                                    {
                                    LOG_ERROR("sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x", (unsigned int) sc);
                                    }
+            else{
             LOG_INFO("indications enabled by client\n\r");
+            }
             nextState = INDICATIONS_ENABLED;
         }
         break;

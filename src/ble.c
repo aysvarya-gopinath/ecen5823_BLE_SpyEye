@@ -391,7 +391,7 @@ void handle_ble_event(sl_bt_msg_t *evt) {
                      (evt->data.evt_scanner_legacy_advertisement_report.address.addr[3] == bt_address.addr[3]) &&
                      (evt->data.evt_scanner_legacy_advertisement_report.address.addr[4] == bt_address.addr[4]) &&
                      (evt->data.evt_scanner_legacy_advertisement_report.address.addr[5] == bt_address.addr[5]))//&&
-                     //(evt->data.evt_scanner_legacy_advertisement_report.event_flags == SL_BT_SCANNER_EVENT_FLAG_SCANNABLE) && //checking if connectable
+                     //(evt->data.evt_scanner_legacy_advertisement_report.event_flags == SL_BT_SCANNER_EVENT_FLAG_SCANNABLE) && //checking if connectable and scannable
                    //(evt->data.evt_scanner_legacy_advertisement_report.address_type == sl_bt_gap_public_address))
                     {
                      printf("Received Address: %02X:%02X:%02X:%02X:%02X:%02X\n",
