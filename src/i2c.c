@@ -110,7 +110,6 @@ void I2C0_IRQHandler(void) {
 void log_temperature(){
   uint32_t temp_raw = ((uint32_t) read_data[0] << 8) | read_data[1]; //extract temperature from raw data
   int32_t temp_deg = (int32_t)((SCALING_FACTOR * temp_raw) / MAX_16bit) - TEMP_OFFSET; //convert to celcius
-  LOG_INFO("\n\r Temperature: %d C\n", temp_deg);
   send_temp_ble(temp_deg);  //send the temperature to the ble stack
 }
 
