@@ -9,7 +9,7 @@
 #include "sl_bt_api.h"
 #include "gatt_db.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 1 //
+#define INCLUDE_LOG_DEBUG 0 //
 #include "src/log.h"
 #include"math.h"
 #include "lcd.h"
@@ -392,7 +392,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
             sc = sl_bt_connection_open ( evt->data.evt_scanner_legacy_advertisement_report.address,
                                          sl_bt_gap_public_address,
                                          sl_bt_gap_phy_1m,
-                                         &ble_data.connectionHandle);
+                                         NULL);
             if (sc != SL_STATUS_OK)
               { LOG_ERROR( "\n\r sl_bt_connection_open() returned != 0 status=0x%04x\n",(unsigned int) sc);
               }
@@ -422,7 +422,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
               { LOG_ERROR( "sl_bt_gatt_send_characteristic_confirmation() returned != 0 status=0x%04x",(unsigned int) sc);
               }
           }
-        int32_t temp_degree = FLOAT_TO_INT32 (&(evt->data.evt_gatt_characteristic_value.value.data));
+        int32_t temp_degree = FLOAT_TO_INT32 ((evt->data.evt_gatt_characteristic_value.value.data));
         displayPrintf (DISPLAY_ROW_TEMPVALUE, "Temperature = %d", temp_degree);
       }
       break;

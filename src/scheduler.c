@@ -17,7 +17,7 @@
 #include"lcd.h"
 #include "ble_device_type.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 1
+#define INCLUDE_LOG_DEBUG 0
 #include "src/log.h"
 
 uint32_t myEvents = NO_EVENT, setEvent = NO_EVENT; //variables to set events

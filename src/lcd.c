@@ -69,7 +69,7 @@
 #include"gpio.h"
 
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 1
+#define INCLUDE_LOG_DEBUG 0
 #include "log.h"
 
 

@@ -18,7 +18,7 @@
 
 #include "lcd.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 1
+#define INCLUDE_LOG_DEBUG 0
 #include "src/log.h"
 
 uint8_t  read_data[ 2 ]; //to hold sensor data
