@@ -52,7 +52,7 @@ uint32_t connectionHandle; //connection handle
 uint32_t serviceHandle; //service handle
 uint16_t characteristicsHandle; //characteristics handle
 bool pb0_pressed ; //flag to check if the indications for the button press is enabled
-uint8_t bondingHandle;
+int bondingHandle;
 } ble_data_struct_t;
 
 #define QUEUE_DEPTH      (16)
@@ -80,6 +80,9 @@ bool     write_queue      (uint16_t  charHandle, uint32_t  bufLength, uint8_t *b
 
 //dequeue an element in the cbfifo
 bool     read_queue       (uint16_t *charHandle, uint32_t *bufLength, uint8_t *buffer);
+
+//depth of the queue
+uint32_t get_queue_depth(void);
 
 //function to return a pointer to the ble_data structure
 ble_data_struct_t* get_ble_dataPtr(void);

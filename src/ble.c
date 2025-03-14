@@ -24,15 +24,15 @@ uint32_t         rptr = 0;              // read pointer
 uint32_t  buff_elements = 0;   //length of the enqueued buffer
 bool full_flag=false;
 bool empty_flag=false; // flags to indicate full and empty queue
+bool isEmpty = false, isFull=false; //holds return types
+ble_data_struct_t ble_data; // BLE private data
+bd_addr bt_address = SERVER_BT_ADDRESS;
 
 //    cbfifo variables
 uint16_t     charHandle;
 uint32_t     bufLength;
  uint8_t      buffer[5];
 
-bool isEmpty = false, isFull=false; //holds return types
-
-ble_data_struct_t ble_data; // BLE private data
 
 /* This function returns a pointer to the ble_data structure
  * No parameters
@@ -42,7 +42,7 @@ ble_data_struct_t* get_ble_dataPtr (void)
 {
   return &ble_data;
 }
-bd_addr bt_address = SERVER_BT_ADDRESS;
+
 
 /*Increments the read and write pointer to the next position
  * pointer is the parameter
@@ -89,7 +89,6 @@ return false; //queue is not full and write is successfull
 }
 
 
-
 // This function reads an entry from the queue, and returns values to the
 // caller. The values from the queue entry are returned by writing
 // the values to variables declared by the caller, where the caller is passing
@@ -124,6 +123,32 @@ else            // queue not empty
 }
 
 
+// ---------------------------------------------------------------------
+// Public function.
+// Function that computes the number of written entries currently in the queue. If there
+// are 3 entries in the queue, it should return 3. If the queue is empty it should
+// return 0. If the queue is full it should return either QUEUE_DEPTH if
+// USE_ALL_ENTRIES==1 otherwise returns QUEUE_DEPTH-1.
+// ---------------------------------------------------------------------
+uint32_t get_queue_depth() {
+if (wptr==rptr) // if set, queue is empty
+  {
+return 0;
+  }
+  else if (nextPtr(wptr) == rptr) // if set , queue is full
+  {
+   return (QUEUE_DEPTH-1) ; // use all entries is 0
+  }
+  else if (wptr > rptr) { // queue not full, normal case
+   return buff_elements;
+  }
+  else { // queue is wrapped around
+    return (QUEUE_DEPTH - rptr + wptr);
+  }
+
+}
+
+
 
 /*This function sends temperature data over BLE
  * No return types
@@ -153,11 +178,11 @@ void send_temp_ble(int32_t temp_deg){
           "\n\r sl_bt_gatt_server_write_attribute_value() returned != 0 status=0x%04x\n",
           (unsigned int) sc);
     }
-  if (ble_data.connect_open == true && ble_data.htm_indications == true)
-    { //if connections are open and htm indications are enabled
-      if (!ble_data.inflight_indication) //not in transit
-       {
-          displayPrintf(DISPLAY_ROW_TEMPVALUE,"Temperature=%u",temp_deg); //disaply the temperature on screen
+  if (ble_data.htm_indications == true)//if the indications are enabled
+    {
+      if (ble_data.inflight_indication == false && (get_queue_depth () == 0)) //if not inflight and queue is empty
+        {
+          displayPrintf (DISPLAY_ROW_TEMPVALUE, "Temperature=%u", temp_deg); //display the temperature on screen
           //send indication with temperature
           sc = sl_bt_gatt_server_send_indication (ble_data.connectionHandle,
           gattdb_temperature_measurement, // handle from gatt_db.h
@@ -170,16 +195,20 @@ void send_temp_ble(int32_t temp_deg){
                   (unsigned int) sc);
             }
           else
-            {
-              ble_data.inflight_indication = INFLIGHT; //mark as in transit
-            }
+            ble_data.inflight_indication = INFLIGHT; //mark as in transit
+
         }
-    }
-  else
-    {
-      displayPrintf(DISPLAY_ROW_TEMPVALUE,"");  //clear temp
-    }
+      else           //if queue is not empty and inflight
+        {
+          displayPrintf (DISPLAY_ROW_TEMPVALUE, "");  //clear temp
+
+          write_queue (gattdb_temperature_measurement, 5,
+                       htm_temperature_buffer);
+
+        }
 }
+}
+
 
 /*This function sends push button data over BLE
  * No return types
@@ -188,47 +217,45 @@ void send_temp_ble(int32_t temp_deg){
 void send_pushbutton_data(uint8_t pb_data)
 {
   sl_status_t sc;
-
-        sc = sl_bt_gatt_server_write_attribute_value(
-        gattdb_button_state,
-        0, //offset
-        1, //length
-        &pb_data
-        );
-    if (sc != SL_STATUS_OK)
-      {
-        LOG_ERROR("\n\r sl_bt_gatt_server_write_attribute_value() returned != 0 status=0x%04x\n",
-            (unsigned int) sc);
-      }
-    //check if the indications for the button press is enabled
-    if (ble_data.connect_open == true && ble_data.pb0_pressed == true)
+  sc = sl_bt_gatt_server_write_attribute_value (
+      gattdb_button_state,
+      0, //offset
+      1, //length
+      &pb_data);
+  if (sc != SL_STATUS_OK)
     {
-        if (!ble_data.inflight_indication) //not in transit
-               {
-
-            LOG_INFO("sending push button data");
-        sc = sl_bt_gatt_server_send_indication(ble_data.connectionHandle,
-                                               gattdb_button_state,
-                                               1,
-                                              &pb_data );
-        if (sc != SL_STATUS_OK)
-          {  LOG_ERROR( "\n\r sl_bt_gatt_server_send_indication() returned != 0 status=0x%04x\n",
-                        (unsigned int) sc);
-          }
-        // indications are inflight
-                   ble_data.inflight_indication = true;
-               }
+      LOG_ERROR(
+          "\n\r sl_bt_gatt_server_write_attribute_value() returned != 0 status=0x%04x\n",
+          (unsigned int) sc);
     }
-       else
+  //check if the indications for the button press is enabled
+  if (ble_data.pb0_pressed == true)
+    {
+      if (ble_data.inflight_indication == false && (get_queue_depth () == 0)) //if queue is empty then send directly to client
+        {
+          sc = sl_bt_gatt_server_send_indication (ble_data.connectionHandle,
+          gattdb_button_state,
+                                                  1, &pb_data);
+          if (sc != SL_STATUS_OK)
             {
-            //isEmpty = write_queue(gattdb_button_state,sizeof(pb_data),&pb_data);
-           isEmpty =write_queue(gattdb_button_state, sizeof(uint8_t), (uint8_t *)&pb_data);
+              LOG_ERROR(
+                  "\n\r sl_bt_gatt_server_send_indication() returned != 0 status=0x%04x\n",
+                  (unsigned int) sc);
+            }
+          else
+            ble_data.inflight_indication = true; // indications are inflight
+        }
+      else
+        {
+          // isEmpty = write_queue(gattdb_button_state,sizeof(pb_data),&pb_data);
+          isEmpty = write_queue (gattdb_button_state, sizeof(uint8_t),
+                                 (uint8_t*) &pb_data);
 
-
-            if (isEmpty == true)
-                LOG_ERROR("circular buffer is empty\n\r");
+          if (isEmpty == true)
+            LOG_ERROR("circular buffer is empty\n\r");
         }
     }
+}
 
 #else
 static int32_t FLOAT_TO_INT32 (const uint8_t *buffer_ptr)
@@ -277,11 +304,13 @@ void handle_ble_event (sl_bt_msg_t *evt)
       {
         displayInit ();  //initialise the lcd display
         // extract BT device address
-        ble_data.connectionHandle = 1;
+        ble_data.connectionHandle = 0;
         ble_data.connect_open = false;
         ble_data.htm_indications = false;
         ble_data.inflight_indication = NOT_INFLIGHT;
         ble_data.pb0_pressed=false;
+        ble_data.bondingHandle=0;
+
 
         sc = sl_bt_system_get_identity_address (&ble_data.myAddress,
                                                 &ble_data.myAddressType);
@@ -301,18 +330,20 @@ void handle_ble_event (sl_bt_msg_t *evt)
             displayPrintf (DISPLAY_ROW_ASSIGNMENT, ASSIGNMENT); //displays assignment number
           }
 
-        uint8_t flags=0b00001111; //0x0F
-               //configure sm requirements and io capability
-               sc=sl_bt_sm_configure(flags, sl_bt_sm_io_capability_displayyesno);
-               if (sc != SL_STATUS_OK)
-                        {
-                          LOG_ERROR("\n\r sl_bt_sm_configure() returned != 0 status=0x%04x\n",(unsigned int) sc);
-                        }
-               //delete the bondings
-               sc = sl_bt_sm_delete_bondings();
-                                if (sc != SL_STATUS_OK) {
-                                          LOG_ERROR("sl_bt_sm_delete_bondings() returned != 0 status=0x%04x", (unsigned int) sc);
-                                       }
+        //configure sm requirements and io capability
+        sc = sl_bt_sm_configure (0x0F, sl_bt_sm_io_capability_displayyesno);
+        if (sc != SL_STATUS_OK)
+          {
+            LOG_ERROR("\n\r sl_bt_sm_configure() returned != 0 status=0x%04x\n",
+                      (unsigned int) sc);
+          }
+        //delete the bondings
+        sc = sl_bt_sm_delete_bondings ();
+        if (sc != SL_STATUS_OK)
+          {
+            LOG_ERROR("sl_bt_sm_delete_bondings() returned != 0 status=0x%04x",
+                      (unsigned int) sc);
+          }
 
         /*********************************SERVER**************************************************/
 #if DEVICE_IS_BLE_SERVER
@@ -350,6 +381,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
 
         displayPrintf (DISPLAY_ROW_NAME, BLE_DEVICE_TYPE_STRING); // prints Server on display
         displayPrintf (DISPLAY_ROW_CONNECTION, "Advertising");
+
 
      /***************************************CLIENT************************************/
 #else
@@ -438,15 +470,20 @@ void handle_ble_event (sl_bt_msg_t *evt)
         ble_data.connect_open = false; //connection is closed
         ble_data.inflight_indication = false; //not inflight
         ble_data.htm_indications = false;
+        ble_data.bondingHandle=0;
+        ble_data.connectionHandle=0;
+        ble_data.pb0_pressed=0;
 
         //delete all bondings
-       sc= sl_bt_sm_delete_bondings(); //empties the persistent binding database
-       if (sc != SL_STATUS_OK) {
-        LOG_ERROR("sl_bt_sm_delete_bondings() returned != 0 status=0x%04x", (unsigned int) sc);
-                               }
-       //turn off the inidcations LEDS
-       gpioLed0SetOff();
-       gpioLed1SetOff();
+        sc = sl_bt_sm_delete_bondings (); //empties the persistent binding database
+        if (sc != SL_STATUS_OK)
+          {
+            LOG_ERROR("sl_bt_sm_delete_bondings() returned != 0 status=0x%04x",
+                      (unsigned int) sc);
+          }
+        //turn off the inidications LEDS
+        gpioLed0SetOff ();
+        gpioLed1SetOff ();
 
        //generate advertising data
         sc = sl_bt_legacy_advertiser_generate_data (
@@ -466,6 +503,8 @@ void handle_ble_event (sl_bt_msg_t *evt)
         else{
         displayPrintf (DISPLAY_ROW_CONNECTION, "Advertising");
         displayPrintf (DISPLAY_ROW_TEMPVALUE, ""); //clear the temperature value
+        displayPrintf(DISPLAY_ROW_PASSKEY, "");
+        displayPrintf(DISPLAY_ROW_ACTION,"");
         }
 
     /*****************************CLIENT******************************/
@@ -505,189 +544,200 @@ void handle_ble_event (sl_bt_msg_t *evt)
     case sl_bt_evt_gatt_server_characteristic_status_id:
       {
         /*----------------------------- TEMPERATURE MEASUREMENT-------------------------*/
-        if (evt->data.evt_gatt_server_characteristic_status.characteristic == gattdb_temperature_measurement)
+        if (evt->data.evt_gatt_server_characteristic_status.characteristic
+            == gattdb_temperature_measurement)
           {
-            if (evt->data.evt_gatt_server_characteristic_status.status_flags== sl_bt_gatt_server_client_config)
+            if (evt->data.evt_gatt_server_characteristic_status.status_flags
+                == sl_bt_gatt_server_client_config)
               {
-                if ((evt->data.evt_gatt_server_characteristic_status.client_config_flags == sl_bt_gatt_server_indication)
-                    || (evt->data.evt_gatt_server_characteristic_status.client_config_flags== sl_bt_gatt_server_notification_and_indication))
+                if ((evt->data.evt_gatt_server_characteristic_status.client_config_flags
+                    == sl_bt_gatt_server_indication)
+                    || (evt->data.evt_gatt_server_characteristic_status.client_config_flags
+                        == sl_bt_gatt_server_notification_and_indication))
                   {
                     ble_data.htm_indications = true;  //enabled htm indications
-                    gpioLed0SetOn(); //turn on LED0 when htm indications are enabled
+                    gpioLed0SetOn (); //turn on LED0 when htm indications are enabled
                   } // sl_bt_gatt_server_indication
                 else
                   {
                     ble_data.htm_indications = false;  //disabled htm indication
                     displayPrintf (DISPLAY_ROW_TEMPVALUE, "");
-                    gpioLed0SetOff();//turn off LED0 when htm indications are disabled
+                    gpioLed0SetOff (); //turn off LED0 when htm indications are disabled
                   }
               }  //sl_bt_gatt_server_client_config
 
-            if (evt->data.evt_gatt_server_characteristic_status.status_flags== sl_bt_gatt_server_confirmation) //client acknowledged indication
+            if (evt->data.evt_gatt_server_characteristic_status.status_flags
+                == sl_bt_gatt_server_confirmation) //client acknowledged indication
               {
                 ble_data.inflight_indication = NOT_INFLIGHT; //clear inflight flag
 
-                isFull = read_queue(&charHandle, &bufLength, buffer);
-                if (isFull == true)
-                      LOG_ERROR("circular buffer is full\n\r");
-                 else
-                    {
-                        if (charHandle == gattdb_temperature_measurement)
-                        send_temp_ble(*(int32_t *)buffer);
+                if ((ble_data.htm_indications == true)
+                    && (get_queue_depth () > 0)
+                    && (ble_data.bondingHandle == 1))
+                  {
+                    isFull = read_queue (&charHandle, &bufLength, buffer);
+                    if (isFull == true)
+                      LOG_ERROR("circular buffer is empty\n\r");
+                    else
+                      {
+                        sc = sl_bt_gatt_server_send_indication (
+                            ble_data.connectionHandle, charHandle, bufLength,
+                            buffer);
+                        if (sc != SL_STATUS_OK)
+                          {
+                            LOG_ERROR(
+                                "sl_bt_gatt_server_send_indication() returned != 0 status=0x%04x",
+                                (unsigned int) sc);
+                          }
+                        else
+                          ble_data.inflight_indication = true;
 
-                         else{
-
-                             sc = sl_bt_gatt_server_send_indication (
-                                 ble_data.connectionHandle,
-                                 charHandle,
-                                 bufLength,
-                                 buffer);
-                             if (sc != SL_STATUS_OK)
-                               {
-                                 LOG_ERROR(  "sl_bt_gatt_server_send_indication() returned != 0 status=0x%04x", (unsigned int) sc);
-                               }
-                       ble_data.inflight_indication = true;
-                         }
-              }
-             } //sl_bt_gatt_server_confirmation
+                      }
+                  }
+              } //sl_bt_gatt_server_confirmation
 
           } //gattdb_temperature_measurement
 
         /*----------------------------- BUTTON PRESS -------------------------*/
         //track whether indications are enabled for the button press characteristic
 
-             if (evt->data.evt_gatt_server_characteristic_status.characteristic == gattdb_button_state)
-               {
-                 if (evt->data.evt_gatt_server_characteristic_status.status_flags== sl_bt_gatt_server_client_config)
-                   {
-                     if ((evt->data.evt_gatt_server_characteristic_status.client_config_flags == sl_bt_gatt_server_indication)
-                         || (evt->data.evt_gatt_server_characteristic_status.client_config_flags== sl_bt_gatt_server_notification_and_indication))
-                       {
-                         ble_data.pb0_pressed = true;  //enabled button press indications
-                         gpioLed1SetOn(); //turn on LED0 when htm indications are enabled
-                       } // sl_bt_gatt_server_indication
-                     else
-                       {
-                         ble_data.pb0_pressed = false;  //disabled  button_pressed indication
-                         displayPrintf (DISPLAY_ROW_TEMPVALUE, "");
-                         gpioLed1SetOff();//turn off LED0 when htm indications are disabled
-                       }
-                   }  //sl_bt_gatt_server_client_config
-                 if (evt->data.evt_gatt_server_characteristic_status.status_flags== sl_bt_gatt_server_confirmation) //client acknowledged indication
-                   {
-                ble_data.inflight_indication = NOT_INFLIGHT; //clear inflight flag
-
-                isFull = read_queue (&charHandle, &bufLength, buffer);
-                if (isFull == true)
-                  LOG_ERROR("circular buffer is full\n\r");
+             if (evt->data.evt_gatt_server_characteristic_status.characteristic
+            == gattdb_button_state)
+          {
+            if (evt->data.evt_gatt_server_characteristic_status.status_flags
+                == sl_bt_gatt_server_client_config)
+              {
+                if ((evt->data.evt_gatt_server_characteristic_status.client_config_flags
+                    == sl_bt_gatt_server_indication)
+                    || (evt->data.evt_gatt_server_characteristic_status.client_config_flags
+                        == sl_bt_gatt_server_notification_and_indication))
+                  {
+                    ble_data.pb0_pressed = true; //enabled button press indications
+                    gpioLed1SetOn (); //turn on LED1 when button press indications are enabled
+                  } // sl_bt_gatt_server_indication
                 else
                   {
-                    if (charHandle == gattdb_button_state)
+                    ble_data.pb0_pressed = false; //disabled  button_pressed indication
+                    displayPrintf (DISPLAY_ROW_TEMPVALUE, "");
+                    gpioLed1SetOff (); //turn off LED0 when button press indications are disabled
+                  }
+              }  //sl_bt_gatt_server_client_config
+            if (evt->data.evt_gatt_server_characteristic_status.status_flags
+                == sl_bt_gatt_server_confirmation) //client acknowledged indication
+              {
+                ble_data.inflight_indication = NOT_INFLIGHT; //clear inflight flag
+                if ((ble_data.pb0_pressed == true) && (get_queue_depth () > 0)
+                    && (ble_data.bondingHandle == 1))  //if values in  queue
+                  {
+                    isFull = read_queue (&charHandle, &bufLength, buffer);
+                    if (isFull == true)
+                      LOG_ERROR("circular buffer is empty\n\r");
+                    else
                       {
                         sc = sl_bt_gatt_server_send_indication (
-                            ble_data.connectionHandle,
-                            charHandle,
-                            bufLength,
+                            ble_data.connectionHandle, charHandle, bufLength,
                             buffer);
                         if (sc != SL_STATUS_OK)
                           {
-                            LOG_ERROR(  "sl_bt_gatt_server_send_indication() returned != 0 status=0x%04x", (unsigned int) sc);
+                            LOG_ERROR(
+                                "sl_bt_gatt_server_send_indication() returned != 0 status=0x%04x",
+                                (unsigned int) sc);
                           }
-                        ble_data.inflight_indication = true;
+                        else
+                          ble_data.inflight_indication = true;
                       }
-                    else
-                           send_temp_ble (*(int32_t*) buffer);
 
                   }
 
               } //sl_bt_gatt_server_confirmation
 
           } //gattdb_button_state
-             break;
+        break;
       }
 
 ////////////////////////////////////////////SERVER TIMEOUT///////////////////////////////////////////////////////////
     case sl_bt_evt_gatt_server_indication_timeout_id:
       {
-           ble_data.connect_open = false; //connection is closed
-           ble_data.htm_indications = false;
-          ble_data.inflight_indication = NOT_INFLIGHT; // indication not in flight
+        ble_data.connect_open = false; //connection is closed
+        ble_data.htm_indications = false;
+        ble_data.inflight_indication = NOT_INFLIGHT; // indication not in flight
         break;
       }
 
 
 /////////////////////////////////////////////PASSKEY DISPLAY////////////////////////////////////////////////////
-          case sl_bt_evt_sm_confirm_passkey_id:
-            {
-              displayPrintf(DISPLAY_ROW_PASSKEY,"");  //display the passkey
-               if (ble_data.connectionHandle != evt->data.evt_sm_confirm_passkey.connection)
-                                LOG_ERROR("Failed to confirm key\n\r");
-                            else
-                            {
-                                ble_data.bondingHandle = 1;
-                                displayPrintf(DISPLAY_ROW_PASSKEY, "Passkey %d", evt->data.evt_sm_confirm_passkey.passkey);
-                                displayPrintf(DISPLAY_ROW_ACTION, "Confirm with PB0");
-                            }
-                       break;
+    case sl_bt_evt_sm_confirm_passkey_id:
+      {
+        if (ble_data.connectionHandle
+            != evt->data.evt_sm_confirm_passkey.connection)
+          LOG_ERROR("Failed to confirm pass key\n\r");
+        else
+          {
+            displayPrintf (DISPLAY_ROW_PASSKEY, "Passkey %d",
+                           evt->data.evt_sm_confirm_passkey.passkey);
+            displayPrintf (DISPLAY_ROW_ACTION, "Confirm with PB0");
+          }
+        break;
  }
 
 ///////////////////////////////////////////EXTERNAL SIGNAL RECEIVED/////////////////////////////////////////////////////////
- case sl_bt_evt_system_external_signal_id:
-            {
-              //push button is pressed
-              if (evt->data.evt_system_external_signal.extsignals == PUSH_BUTTON_PRESS)
-                                     {
+    case sl_bt_evt_system_external_signal_id:
+      {
+        //push button is pressed
+        if (evt->data.evt_system_external_signal.extsignals == PUSH_BUTTON_PRESS)
+          {
+            if (ble_data.bondingHandle == 0)
+              sl_bt_sm_passkey_confirm (ble_data.connectionHandle, 1);
 
-                                       if(ble_data.bondingHandle==1){
-                                         sc = sl_bt_sm_passkey_confirm(ble_data.connectionHandle,1);
-                                         if (sc != SL_STATUS_OK)
-                                             LOG_ERROR("Failed to accept passkey confirm value\n\r");
-                                         if (ble_data.connect_open && ble_data.bondingHandle == 1)
-                                           {
-                                         displayPrintf(DISPLAY_ROW_PASSKEY, " ");
-                                        displayPrintf(DISPLAY_ROW_ACTION, " ");
-                                         if ((GPIO_PinInGet(PB_port, PB0_pin) == 0))
-                                          {
-                                             send_pushbutton_data(1);
-                                            displayPrintf(DISPLAY_ROW_9, "Button Pressed");
-                                          }
+            if ((GPIO_PinInGet (PB_port, PB0_pin) == 0)) //pressed
+              {
+                displayPrintf (DISPLAY_ROW_9, "Button Pressed");
+                if (ble_data.connect_open && ble_data.bondingHandle == 1)
+                  {
+                    displayPrintf (DISPLAY_ROW_PASSKEY, " ");
+                    displayPrintf (DISPLAY_ROW_ACTION, " ");
+                    send_pushbutton_data (1);
+                  }
 
-                                         else if ((GPIO_PinInGet(PB_port, PB0_pin) == 1))
-                                            {
-                                             send_pushbutton_data(0);
-                                         displayPrintf(DISPLAY_ROW_9, "Button Released");
-                                         }
-                                       }
-                                       }}
-              break;
- }
+              }
+
+            else if ((GPIO_PinInGet (PB_port, PB0_pin) == 1)) //released
+              {
+                displayPrintf (DISPLAY_ROW_9, "Button Released");
+                if (ble_data.connect_open && ble_data.bondingHandle == 1)
+                  send_pushbutton_data (0);
+              }
+          }
+
+        break;
+      }
 
 //////////////////////////////////////////BONDING REQUEST RECEIVED//////////////////////////////////////////////////////////
     case sl_bt_evt_sm_confirm_bonding_id:
       {
-       sc=sl_bt_sm_bonding_confirm(ble_data.connectionHandle,1); //accept the bonding request
-       if (sc != SL_STATUS_OK)
-              LOG_ERROR("Failed accept bonding request\n\r");
+        sc = sl_bt_sm_bonding_confirm (ble_data.connectionHandle, 0x01); //accept the bonding request
+        if (sc != SL_STATUS_OK)
+          LOG_ERROR("Failed accept bonding request\n\r");
         break;
       }
 
 
 //////////////////////////////////////////////////BONDING SUCCESSFULL//////////////////////////////////////////////////
     case sl_bt_evt_sm_bonded_id:
-        {
-          ble_data.bondingHandle = 1;     //saving bonding status;
-        displayPrintf(DISPLAY_ROW_CONNECTION, "Bonded");
-
-                break;
-              }
+      {
+        ble_data.bondingHandle = 1;     //saving bonding status
+        displayPrintf (DISPLAY_ROW_CONNECTION, "Bonded");
+        displayPrintf (DISPLAY_ROW_PASSKEY, " ");
+        displayPrintf (DISPLAY_ROW_ACTION, " ");
+        break;
+      }
 
 ///////////////////////////////////////////////BONDING FAILED/////////////////////////////////////////////////////////////
-    case  sl_bt_evt_sm_bonding_failed_id:
-        {
-                 ble_data.bondingHandle = 0;
-                 LOG_ERROR("Bonding failed\n\r");
-                break;
-              }
+    case sl_bt_evt_sm_bonding_failed_id:
+      {
+        ble_data.bondingHandle = 0;
+        break;
+      }
 
       /*****************************CLIENT********************************/
 #else
@@ -749,7 +799,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
 #endif
 
     default:
-      break;
+      break; //break
     } // end - switch
 }
 
