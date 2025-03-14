@@ -63,6 +63,18 @@ void schedulerSetEvent_i2cTransfer ()
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
+/*Scheduler routine to set an scheduler event based on psuhbutton 0 external interrupt
+ * No return types and parameters
+ */
+void schedulerSetEvent_pushbutton0()
+{
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL(); //enter critical section
+  sl_bt_external_signal (PUSH_BUTTON_PRESS); //signal the Bluetooth stack that an (external interrupt)push button pressed
+  CORE_EXIT_CRITICAL(); // exit critical section
+}
+
+
 /*State machine to read temperature from Si7021 sensor via I2C
  * An EVENT set by the interrupts is passed as a parameter
  * No return type

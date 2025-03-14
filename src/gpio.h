@@ -28,7 +28,25 @@ gpio.h
 
 #ifndef SRC_GPIO_H_
 #define SRC_GPIO_H_
+#include "em_gpio.h"
 
+// Student Edit: Define these, 0's are placeholder values.
+//
+// See the radio board user guide at https://www.silabs.com/documents/login/user-guides/ug279-brd4104a-user-guide.pdf
+// and GPIO documentation at https://siliconlabs.github.io/Gecko_SDK_Doc/efm32g/html/group__GPIO.html
+// to determine the correct values for these.
+// If these links have gone bad, consult the reference manual and/or the datasheet for the MCU.
+// Change to correct port and pins:
+#define LED_port   (gpioPortF)
+#define LED0_pin   (4) //PF4
+#define LED1_pin   (5)  //PF5
+
+#define SI7021_port  (gpioPortD) //sensor and EXTCOMIN pin has the same port
+#define SI7021_pin    15 //PD15
+#define EXT_COMIN_pin   13 //PD13
+
+#define PB_port  (gpioPortF)
+#define PB0_pin (6)  //PF6
 
 
 

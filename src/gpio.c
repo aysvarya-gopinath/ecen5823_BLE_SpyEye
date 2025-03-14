@@ -23,33 +23,14 @@
 // For any new GPIO function you create, place that function in this file.
 // *****************************************************************************
 #include <stdbool.h>
-#include "em_gpio.h"
+
 #include <string.h>
 #include "gpio.h"
 #include"lcd.h"
 
-
-
-// Student Edit: Define these, 0's are placeholder values.
-//
-// See the radio board user guide at https://www.silabs.com/documents/login/user-guides/ug279-brd4104a-user-guide.pdf
-// and GPIO documentation at https://siliconlabs.github.io/Gecko_SDK_Doc/efm32g/html/group__GPIO.html
-// to determine the correct values for these.
-// If these links have gone bad, consult the reference manual and/or the datasheet for the MCU.
-// Change to correct port and pins:
-#define LED_port   (gpioPortF)
-#define LED0_pin   (4) //PF4
-#define LED1_pin   (5)  //PF5
-
-#define SI7021_port  (gpioPortD) //sensor and EXTCOMIN pin has the same port
-#define SI7021_pin    15 //PD15
-
-#define EXT_COMIN_pin   13 //PD13
 // Set GPIO drive strengths and modes of operation
-void
-gpioInit ()
+void gpioInit ()
 {
-  // Student Edit:
 
   // Set the port's drive strength. In this MCU implementation, all GPIO cells
   // in a "Port" share the same drive strength setting.
@@ -64,6 +45,11 @@ gpioInit ()
   GPIO_PinModeSet (SI7021_port, SI7021_pin, gpioModePushPull, false);
   GPIO_PinModeSet (SI7021_port, EXT_COMIN_pin, gpioModePushPull, true);
 
+  //configure the push button 0
+  GPIO_PinModeSet (PB_port, PB0_pin,gpioModeInputPullFilter,true);
+
+  //configure the gpio external pin interrupt
+  GPIO_ExtIntConfig (PB_port, PB0_pin, PB0_pin, true, true, true);
 
 } // gpioInit()
 

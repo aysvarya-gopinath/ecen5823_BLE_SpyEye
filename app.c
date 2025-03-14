@@ -181,6 +181,8 @@ SL_WEAK void app_init(void)
   NVIC_ClearPendingIRQ (LETIMER0_IRQn);  //clear pendings
   NVIC_EnableIRQ (LETIMER0_IRQn); // config NVIC to take IRQs from LETIMER0
   initLETIMER0 (); //initialize the letimer0
+  NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
+  NVIC_EnableIRQ(GPIO_EVEN_IRQn); //enabling the GPIO interrupt for push button
   i2c_init (); //initialize i2c
 } // app_init()
 

@@ -67,7 +67,7 @@ enum display_row {
 
 // The number of characters per row
 #define DISPLAY_ROW_LEN      20
-#define ASSIGNMENT ("A7")
+#define ASSIGNMENT ("A8")
 
 
 // function prototypes

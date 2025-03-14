@@ -53,3 +53,20 @@ uint32_t letimerMilliseconds(void)
   return stamp_time;
 }
 
+/* The default handler for the push button 0 interrupt
+ *  No parameters and return types
+ */
+void GPIO_EVEN_IRQHandler()
+{
+  CORE_DECLARE_IRQ_STATE;
+  uint32_t flags = GPIO_IntGetEnabled (); // Get only enabled and pending interrupts
+  GPIO_IntClear(flags); //clear pending interrrupts
+  CORE_ENTER_CRITICAL(); // disable NVIC interrupts
+  if(flags &(1 << PB0_pin) ) //if PB0 interrupt is set
+    {
+ schedulerSetEvent_pushbutton0();
+    }
+  CORE_EXIT_CRITICAL(); //exiting critical sections
+
+}
+

@@ -9,6 +9,7 @@
 #define SRC_BLE_H_
 #include "sl_bgapi.h"
 #include"sl_bt_api.h"
+#include <stdbool.h>
 
 
 //Set the Advertising minimum and maximum to 250mS
@@ -21,7 +22,7 @@
 #define  LATENCY 4 // 300ms/75ms
 // Set the Supervision timeout to a value greater than (1 + slave latency) *(connection_interval * 2)
 #define TIMEOUT (80) //80       //((1 + 4) * (75*2)/10)
-#define MASTER_TIMEOUT (825)  //(1+4)*(75*2)+75
+#define MASTER_TIMEOUT (85)  //(1+4)*(75*2)+75)/10
 #define MIN_CE_LEN 0
 #define DEFAULT_MAX_CE (0xffff)
 #define MAX_CE_LEN 4  //master
@@ -50,8 +51,35 @@ bool htm_indications; //true when htm indications are enabled (client enables/di
 uint32_t connectionHandle; //connection handle
 uint32_t serviceHandle; //service handle
 uint16_t characteristicsHandle; //characteristics handle
+bool pb0_pressed ; //flag to check if the indications for the button press is enabled
+uint8_t bondingHandle;
 } ble_data_struct_t;
 
+#define QUEUE_DEPTH      (16)
+//   define this to 0 if your design leaves 1 array entry empty
+#define USE_ALL_ENTRIES  (0)
+
+#define MAX_BUFFER_LENGTH  (5)
+#define MIN_BUFFER_LENGTH  (1)
+
+//structure of each entry in the queue
+typedef struct {
+
+  uint16_t       charHandle;                 // GATT DB handle from gatt_db.h
+  uint32_t       bufLength;                  // Number of bytes written to field buffer[5]
+  uint8_t        buffer[MAX_BUFFER_LENGTH];  // The actual data buffer for the indication,
+                                             //   need 5-bytes for HTM and 1-byte for button_state.
+                                             //   For testing, test lengths 1 through 5,
+                                             //   a length of 0 shall be considered an
+                                             //   error, as well as lengths > 5
+
+} queue_struct_t;
+
+//enqueue an element in the cbfifo
+bool     write_queue      (uint16_t  charHandle, uint32_t  bufLength, uint8_t *buffer);
+
+//dequeue an element in the cbfifo
+bool     read_queue       (uint16_t *charHandle, uint32_t *bufLength, uint8_t *buffer);
 
 //function to return a pointer to the ble_data structure
 ble_data_struct_t* get_ble_dataPtr(void);

@@ -15,6 +15,7 @@
 #define UF_LETIMER     (0x01) //3s underflow
 #define IRQ_WAIT_OVER    (0x02) //non-blocking wait
 #define I2C_COMPLETE    (0x04) //i2c transfer complete
+#define PUSH_BUTTON_PRESS  (0x08) //external push button 0
 
 //state variables of the temperature state machine
 typedef enum uint32_t {
@@ -48,6 +49,9 @@ void schedulerSetEvent_WaitIrq(void);
 
 //set an i2c transfer complete event
 void schedulerSetEvent_i2cTransfer(void);
+
+//set an external push button 0 event
+void schedulerSetEvent_pushbutton0();
 
 //state machine for the temperature read
 void Si7021_state_machine(sl_bt_msg_t *evt);
