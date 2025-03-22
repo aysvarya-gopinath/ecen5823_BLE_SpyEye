@@ -47,7 +47,7 @@ gpio.h
 
 #define PB_port  (gpioPortF)
 #define PB0_pin (6)  //PF6
-
+#define PB1_pin (7) //PF7
 
 
 // Function prototypes

@@ -17,17 +17,12 @@
 #include"lcd.h"
 #include "ble_device_type.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 0
+#define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"
 
 uint32_t myEvents = NO_EVENT, setEvent = NO_EVENT; //variables to set events
 
-#if !DEVICE_IS_BLE_SERVER
-// health thermometer service UUID
-static const uint8_t service_uuid[2] ={ 0x09, 0x18 }; //in little endian
-// temperature Measurement characteristic UUID
-static const uint8_t characterictic_uuid[2] ={ 0x1c, 0x2a };
-#endif
+
 
 
 /*Scheduler routine to set scheduler event based on the underflow interrupt
@@ -63,17 +58,27 @@ void schedulerSetEvent_i2cTransfer ()
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
-/*Scheduler routine to set an scheduler event based on psuhbutton 0 external interrupt
+/*Scheduler routine to set an scheduler event based on pushbutton 0 external interrupt
  * No return types and parameters
  */
 void schedulerSetEvent_pushbutton0()
 {
   CORE_DECLARE_IRQ_STATE;
   CORE_ENTER_CRITICAL(); //enter critical section
-  sl_bt_external_signal (PUSH_BUTTON_PRESS); //signal the Bluetooth stack that an (external interrupt)push button pressed
+  sl_bt_external_signal (PUSH_BUTTON0); //signal the Bluetooth stack that an (external interrupt)push button pressed
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
+/*Scheduler routine to set an scheduler event based on pushbutton 1 external interrupt
+ * No return types and parameters
+ */
+void schedulerSetEvent_pushbutton1()
+{
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL(); //enter critical section
+  sl_bt_external_signal (PUSH_BUTTON1); //signal the Bluetooth stack that an (external interrupt)push button pressed
+  CORE_EXIT_CRITICAL(); // exit critical section
+}
 
 /*State machine to read temperature from Si7021 sensor via I2C
  * An EVENT set by the interrupts is passed as a parameter
@@ -154,67 +159,112 @@ discovery_state_machine (sl_bt_msg_t *evt)
 {
   sl_status_t sc;
   ble_data_struct_t *ble_data_ptr = get_ble_dataPtr (); //pointer to the ble_data structure
-  static discoverState_t nextState = IDLE_STATE;
+  static discoverState_t nextState = THERMO_SERVICES_DISCOVER;
   discoverState_t current_state = nextState;
   switch (current_state)
     {
-    case IDLE_STATE: //idle state
-      nextState = IDLE_STATE;
+
+////////////////////////////DISCOVER SERVICED BY UUID FOR TEMPERTURE ///////////////////////////////////////////
+    case THERMO_SERVICES_DISCOVER: //discover services by uuid
+      nextState = THERMO_SERVICES_DISCOVER;
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_connection_opened_id)
         {
           // discover primary services by UUID
-          sc = sl_bt_gatt_discover_primary_services_by_uuid ( ble_data_ptr->connectionHandle, sizeof(service_uuid),(uint8_t*) service_uuid);
+          sc = sl_bt_gatt_discover_primary_services_by_uuid ( ble_data_ptr->connectionHandle, sizeof(thermo_service),(uint8_t*) thermo_service);
           if (sc != SL_STATUS_OK)
-            { LOG_ERROR( "sl_bt_gatt_discover_primary_services_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
-            }
-          nextState = SERVICES_FOUND;
+             LOG_ERROR( "sl_bt_gatt_discover_primary_services_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
+          nextState = THERMO_CHARACTERITICS_DISCOVER;
         }
       break;
-
-    case SERVICES_FOUND: //discovered services by uuid
-      nextState = SERVICES_FOUND;
+////////////////////////////DISCOVER CHARACTERITICS BY UUID FOR TEMPERTURE ///////////////////////////////////////////
+    case THERMO_CHARACTERITICS_DISCOVER: // discover characterictics by uuid
+      nextState = THERMO_CHARACTERITICS_DISCOVER;
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
         {
           // discover  characteristics by specified UUID
           sc = sl_bt_gatt_discover_characteristics_by_uuid (ble_data_ptr->connectionHandle,
-                                                            ble_data_ptr->serviceHandle,
-                                                            sizeof(characterictic_uuid),
-                                                            (uint8_t*) characterictic_uuid);
+                                                            ble_data_ptr->htmserviceHandle,
+                                                            sizeof(thermo_char),
+                                                            (uint8_t*) thermo_char);
           if (sc != SL_STATUS_OK)
               LOG_ERROR( "sl_bt_gatt_discover_characteristics_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
-          nextState = CHARACTERITICS_FOUND;
+          nextState = THERMO_INDICATIONS_ENABLE;
         }
       break;
-
-    case CHARACTERITICS_FOUND: // discovered characterictics by uuid
-      nextState = CHARACTERITICS_FOUND;
+////////////////////////////ENABLE NOTIFICATIONS FOR TEMPERTURE ///////////////////////////////////////////
+    case THERMO_INDICATIONS_ENABLE:  //enable gatt characteristics notifications
+      nextState = THERMO_INDICATIONS_ENABLE;
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
         {
           // enable the indications sent from server
           sc = sl_bt_gatt_set_characteristic_notification (ble_data_ptr->connectionHandle,
-                                                           ble_data_ptr->characteristicsHandle,
+                                                           ble_data_ptr->htmcharacteristicsHandle,
                                                            sl_bt_gatt_indication);
           if (sc != SL_STATUS_OK)
-            { LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
-            }
-          nextState = INDICATIONS_ENABLED;
+             LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
+          nextState = PB_SERVICES_DISCOVER;
 
         }
       break;
 
-    case INDICATIONS_ENABLED: //gatt characteristics notifications enabled
-      nextState = INDICATIONS_ENABLED;
+ ////////////////////////////DISCOVER SERVICES BY UUID FOR PUSH BUTTON ///////////////////////////////////////////
+    case PB_SERVICES_DISCOVER: //discover services by uuid
+        nextState = PB_SERVICES_DISCOVER;
+        if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
+          {
+            // discover primary services by UUID
+            sc = sl_bt_gatt_discover_primary_services_by_uuid ( ble_data_ptr->connectionHandle, sizeof(pb_service),(uint8_t*) pb_service);
+            if (sc != SL_STATUS_OK)
+               LOG_ERROR( "sl_bt_gatt_discover_primary_services_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
+            nextState = PB_CHARACTERITICS_DISCOVER;
+          }
+        break;
+
+ ////////////////////////////DISCOVER CHARACTERITICS BY UUID FOR PUSH BUTTON ///////////////////////////////////////////
+    case PB_CHARACTERITICS_DISCOVER: // discover characterictics by uuid
+      nextState = PB_CHARACTERITICS_DISCOVER;
+      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
+        {
+          // discover  characteristics by specified UUID
+          sc = sl_bt_gatt_discover_characteristics_by_uuid (ble_data_ptr->connectionHandle,
+                                                            ble_data_ptr->pbserviceHandle,
+                                                            sizeof(pb_char),
+                                                            (uint8_t*) pb_char);
+          if (sc != SL_STATUS_OK)
+              LOG_ERROR( "sl_bt_gatt_discover_characteristics_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
+          nextState = PB_INDICATIONS_ENABLE;
+        }
+      break;
+
+////////////////////////////ENABLE NOTIFICATIONS FOR PUSH BUTTON ///////////////////////////////////////////
+    case PB_INDICATIONS_ENABLE:  //enable gatt characteristics notifications
+      nextState = PB_INDICATIONS_ENABLE;
+      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
+        {
+          // enable the indications sent from server
+          sc = sl_bt_gatt_set_characteristic_notification (ble_data_ptr->connectionHandle,
+                                                           ble_data_ptr->pbcharacteristicsHandle,
+                                                           sl_bt_gatt_indication);
+          if (sc != SL_STATUS_OK)
+             LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
+          nextState = WAIT_STATE;
+
+        }
+      break;
+ ////////////////////////////WAITING STATE ///////////////////////////////////////////
+    case WAIT_STATE://waiting for external event
+      nextState = WAIT_STATE;
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
         {
           displayPrintf (DISPLAY_ROW_CONNECTION, "Handling Indications"); //  client indicates
-          nextState = WAIT_STATE;
+          nextState = CLOSED_STATE;
         }
       break;
-
-    case WAIT_STATE: //waiting for external event
-      nextState = WAIT_STATE;
+////////////////////////////CLOSED STATE///////////////////////////////////////////
+    case CLOSED_STATE: //connection closed
+      nextState = CLOSED_STATE;
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_connection_closed_id)
-          nextState = IDLE_STATE;
+          nextState = THERMO_SERVICES_DISCOVER;
       break;
 
     default:

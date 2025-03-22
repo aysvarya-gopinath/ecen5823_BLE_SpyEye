@@ -48,11 +48,16 @@ uint8_t myAddressType; //identity address type
 bool connect_open; //flag to track if connection is opened(true) or closed(false)
 int inflight_indication; //indication status inflight (1) or not (0)(server sends indications to client)
 bool htm_indications; //true when htm indications are enabled (client enables/disables notifications/indications from server)
+bool button_state_indication ; //flag to check if the indications for the button state is enabled
+int bonding_status; //indicates if device is bonded or not
 uint32_t connectionHandle; //connection handle
-uint32_t serviceHandle; //service handle
-uint16_t characteristicsHandle; //characteristics handle
-bool pb0_pressed ; //flag to check if the indications for the button press is enabled
-int bondingHandle;
+uint32_t htmserviceHandle; //service handle for htm
+uint32_t htmcharacteristicsHandle; //characteristics handle for htm
+ uint32_t pbserviceHandle;//service handle for push button
+ uint32_t pbcharacteristicsHandle;//characteristics handle for htm for push button
+
+
+
 } ble_data_struct_t;
 
 #define QUEUE_DEPTH      (16)

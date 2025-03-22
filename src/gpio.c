@@ -51,6 +51,12 @@ void gpioInit ()
   //configure the gpio external pin interrupt
   GPIO_ExtIntConfig (PB_port, PB0_pin, PB0_pin, true, true, true);
 
+  //configure the push button 1
+   GPIO_PinModeSet (PB_port, PB1_pin,gpioModeInputPullFilter,true);
+
+   //configure the gpio external pin interrupt
+   GPIO_ExtIntConfig (PB_port, PB1_pin, PB1_pin, true, true, true);
+
 } // gpioInit()
 
 /*Function to turn on the temperature sensor

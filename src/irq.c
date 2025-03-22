@@ -70,3 +70,19 @@ void GPIO_EVEN_IRQHandler()
 
 }
 
+/* The default handler for the push button  interrupt
+ *  No parameters and return types
+ */
+void GPIO_ODD_IRQHandler()
+{
+  CORE_DECLARE_IRQ_STATE;
+  uint32_t flags = GPIO_IntGetEnabled (); // Get only enabled and pending interrupts
+  GPIO_IntClear(flags); //clear pending interrrupts
+  CORE_ENTER_CRITICAL(); // disable NVIC interrupts
+  if(flags &(1 << PB1_pin) ) //if PB1 interrupt is set
+    {
+ schedulerSetEvent_pushbutton1();
+    }
+  CORE_EXIT_CRITICAL(); //exiting critical sections
+}
+
