@@ -476,6 +476,9 @@ void handle_ble_event (sl_bt_msg_t *evt)
             LOG_ERROR("sl_bt_sm_delete_bondings() returned != 0 status=0x%04x",
                       (unsigned int) sc);
           }
+        ble_data.bonding_status=0;//bonded or not
+        ble_data.connectionHandle=0;
+        ble_data.button_state_indication=false; //button state indications
         //turn off the indications LEDS
         gpioLed0SetOff ();
         gpioLed1SetOff ();
@@ -485,9 +488,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
         ble_data.connect_open = false; //connection is closed
         ble_data.inflight_indication = false; //not inflight
         ble_data.htm_indications = false; //htm indications
-        ble_data.bonding_status=0; //bonded or not
-        ble_data.connectionHandle=0;
-        ble_data.button_state_indication=false; //button state indications
+
 
       //generate advertising data
         sc = sl_bt_legacy_advertiser_generate_data (
@@ -576,10 +577,11 @@ void handle_ble_event (sl_bt_msg_t *evt)
                           {
                             ble_data.inflight_indication = NOT_INFLIGHT; //clear inflight flag
 
-                            if ((ble_data.htm_indications == true)
-                                && (get_queue_depth () > 0)
-                                && (ble_data.bonding_status == 1))
-                              {
+                          //  if ((ble_data.htm_indications == true)
+                              // && (get_queue_depth () > 0))
+                               //&& (ble_data.bonding_status == 1))
+                             // {
+                                LOG_INFO("bonding status before dequeue in temp char %d",ble_data.bonding_status);
                                 isFull = read_queue (&charHandle, &bufLength, buffer);
                                 if (isFull == true)
                                   LOG_ERROR("circular buffer is empty\n\r");
@@ -598,7 +600,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
                                       ble_data.inflight_indication = true;
 
                                   }
-                              }
+                             // }
                           } //sl_bt_gatt_server_confirmation
 
                       } //gattdb_temperature_measurement
@@ -634,14 +636,15 @@ void handle_ble_event (sl_bt_msg_t *evt)
               {
                 LOG_INFO("client confirmation for button");
                 ble_data.inflight_indication = NOT_INFLIGHT; //clear inflight flag
-                if ((ble_data.button_state_indication == true) && (get_queue_depth () > 0)
-                    && (ble_data.bonding_status == 1))  //if values in  queue
-                  {
+              // if ((ble_data.button_state_indication == true) && (get_queue_depth () > 0))
+                   // && (ble_data.bonding_status == 1))  //if values in  queue
+                 // {
+                   LOG_INFO("bonding status before dequeue in temp char %d",ble_data.bonding_status);
                     isFull = read_queue (&charHandle, &bufLength, buffer);
-                    if (isFull == true)
-                      LOG_ERROR("circular buffer is empty\n\r");
-                    else
-                      {
+                   // if (isFull == true)
+                    //  LOG_ERROR("circular buffer is empty\n\r");
+                    //else
+                     // {
                          sc = sl_bt_gatt_server_send_indication (
                             ble_data.connectionHandle, charHandle, bufLength,
                             buffer);
@@ -656,9 +659,9 @@ void handle_ble_event (sl_bt_msg_t *evt)
                             ble_data.inflight_indication = true;
                           LOG_INFO("sending value to client from the queue for push button");
                           }
-                      }
+                     // }
 
-                  }
+                  //}
 
               } //sl_bt_gatt_server_confirmation
 
@@ -703,8 +706,8 @@ void handle_ble_event (sl_bt_msg_t *evt)
                                          sl_bt_gap_phy_1m,
                                          NULL);
             if (sc != SL_STATUS_OK)
-              { LOG_ERROR( "\n\r sl_bt_connection_open() returned != 0 status=0x%04x\n",(unsigned int) sc);
-              }
+               LOG_ERROR( "\n\r sl_bt_connection_open() returned != 0 status=0x%04x\n",(unsigned int) sc);
+
           }
       }
       break;
@@ -765,7 +768,8 @@ void handle_ble_event (sl_bt_msg_t *evt)
       {
       LOG_INFO("charcateristic value received");
         //htm characteristics
-        if (evt->data.evt_gatt_characteristic_value.characteristic == ble_data.htmcharacteristicsHandle) //desired characteristics handle
+        if ((evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication)&&
+            (evt->data.evt_gatt_characteristic_value.characteristic == ble_data.htmcharacteristicsHandle)) //desired characteristics handle
           { //sending confirmation for the received indication from server
             sc = sl_bt_gatt_send_characteristic_confirmation (ble_data.connectionHandle);
             if (sc != SL_STATUS_OK)
@@ -777,14 +781,6 @@ void handle_ble_event (sl_bt_msg_t *evt)
         //button state characterictics
         if (evt->data.evt_gatt_characteristic_value.characteristic == ble_data.pbcharacteristicsHandle) //desired characteristics handle
           {
-            if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication)
-                            {
-            //sending confirmation for the received indication from server
-            sc = sl_bt_gatt_send_characteristic_confirmation (ble_data.connectionHandle);
-            if (sc != SL_STATUS_OK)
-                LOG_ERROR("sl_bt_gatt_send_characteristic_confirmation() for button state returned != 0 status=0x%04x",(unsigned int) sc);
-
-              }//sl_bt_gatt_handle_value_indication
 
             if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication ||
                              evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_read_response)
@@ -798,6 +794,15 @@ void handle_ble_event (sl_bt_msg_t *evt)
             else
               displayPrintf (DISPLAY_ROW_9, "Button Released");
                             }
+            if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication)
+                                      {
+                      //sending confirmation for the received indication from server
+                      sc = sl_bt_gatt_send_characteristic_confirmation (ble_data.connectionHandle);
+                      if (sc != SL_STATUS_OK)
+                          LOG_ERROR("sl_bt_gatt_send_characteristic_confirmation() for button state returned != 0 status=0x%04x",(unsigned int) sc);
+
+                        }//sl_bt_gatt_handle_value_indication
+
           }//button state characterictics
 
       break;
