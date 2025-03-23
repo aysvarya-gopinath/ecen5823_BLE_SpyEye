@@ -58,25 +58,49 @@ void schedulerSetEvent_i2cTransfer ()
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
-/*Scheduler routine to set an scheduler event based on pushbutton 0 external interrupt
+/*Scheduler routine to set an scheduler event based on pushbutton 0 press interrupt
  * No return types and parameters
  */
-void schedulerSetEvent_pushbutton0()
+void schedulerSetEvent_PB0_press()
 {
   CORE_DECLARE_IRQ_STATE;
   CORE_ENTER_CRITICAL(); //enter critical section
-  sl_bt_external_signal (PUSH_BUTTON0); //signal the Bluetooth stack that an (external interrupt)push button pressed
+  sl_bt_external_signal (PB0_press); //signal the Bluetooth stack that an (external interrupt)push button 0 pressed
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
-/*Scheduler routine to set an scheduler event based on pushbutton 1 external interrupt
+
+/*Scheduler routine to set an scheduler event based on pushbutton 1 press interrupt
  * No return types and parameters
  */
-void schedulerSetEvent_pushbutton1()
+void schedulerSetEvent_PB1_press()
 {
   CORE_DECLARE_IRQ_STATE;
   CORE_ENTER_CRITICAL(); //enter critical section
-  sl_bt_external_signal (PUSH_BUTTON1); //signal the Bluetooth stack that an (external interrupt)push button pressed
+  sl_bt_external_signal (PB1_press); //signal the Bluetooth stack that an (external interrupt)push button 1 pressed
+  CORE_EXIT_CRITICAL(); // exit critical section
+}
+
+/*Scheduler routine to set an scheduler event based on pushbutton 0 release interrupt
+ * No return types and parameters
+ */
+void schedulerSetEvent_PB0_release()
+{
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL(); //enter critical section
+  sl_bt_external_signal (PB0_release); //signal the Bluetooth stack that an (external interrupt)push button 0 release
+  CORE_EXIT_CRITICAL(); // exit critical section
+}
+
+
+/*Scheduler routine to set an scheduler event based on pushbutton 1 release interrupt
+ * No return types and parameters
+ */
+void schedulerSetEvent_PB1_release()
+{
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL(); //enter critical section
+  sl_bt_external_signal (PB1_release); //signal the Bluetooth stack that an (external interrupt)push button 1 release
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
@@ -257,6 +281,7 @@ discovery_state_machine (sl_bt_msg_t *evt)
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
         {
           displayPrintf (DISPLAY_ROW_CONNECTION, "Handling Indications"); //  client indicates
+          ble_data_ptr->button_state_indication=true;
           nextState = CLOSED_STATE;
         }
       break;

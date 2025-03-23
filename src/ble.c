@@ -202,15 +202,11 @@ void send_temp_ble(int32_t temp_deg){
         }
       else           //if queue is not empty and inflight
         {
-          displayPrintf (DISPLAY_ROW_TEMPVALUE, "");  //clear temp
+          //displayPrintf (DISPLAY_ROW_TEMPVALUE, "");  //clear temp
           LOG_INFO("writing data to the queue for htm");
-          isEmpty =write_queue (gattdb_temperature_measurement, 5,
+          write_queue (gattdb_temperature_measurement, 5,
                        htm_temperature_buffer);
-          if (isEmpty == true)
-                     LOG_ERROR("circular buffer is full\n\r");
-
-
-        }
+           }
 }
 }
 
@@ -629,7 +625,6 @@ void handle_ble_event (sl_bt_msg_t *evt)
                 else
                   {
                     ble_data.button_state_indication = false; //disabled  button_pressed indication
-                    displayPrintf (DISPLAY_ROW_TEMPVALUE, "");
                     gpioLed1SetOff (); //turn off LED0 when button press indications are disabled
                     LOG_INFO("button indications disabled");
                   }
@@ -659,7 +654,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
                         else
                           {
                             ble_data.inflight_indication = true;
-                          LOG_INFO("sending value to client from the queue fot htm");
+                          LOG_INFO("sending value to client from the queue for push button");
                           }
                       }
 
@@ -767,7 +762,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
 
 ///////////////////////////////////////////////CHARACTERICTIC VALUE RECEIVED//////////////////////////////////////////
     case sl_bt_evt_gatt_characteristic_value_id:
-
+      {
       LOG_INFO("charcateristic value received");
         //htm characteristics
         if (evt->data.evt_gatt_characteristic_value.characteristic == ble_data.htmcharacteristicsHandle) //desired characteristics handle
@@ -794,7 +789,10 @@ void handle_ble_event (sl_bt_msg_t *evt)
             if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication ||
                              evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_read_response)
                             {
-            if (evt->data.evt_gatt_characteristic_value.value.data[0] == 1)
+                LOG_INFO("charcateristic value received for button");
+                uint8_t received_value = evt->data.evt_gatt_characteristic_value.value.data[0];
+                LOG_INFO("BUTTON STATE: %u\r", received_value);
+            if (received_value == 1)
               displayPrintf (DISPLAY_ROW_9, "Button Pressed");
 
             else
@@ -803,6 +801,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
           }//button state characterictics
 
       break;
+      }
 #endif
 /********************************SERVER*&*CLIENT*EVENTS********************************************************/
       //////////////////////////////////////////BONDING REQUEST RECEIVED//////////////////////////////////////////////////////////
@@ -839,49 +838,45 @@ void handle_ble_event (sl_bt_msg_t *evt)
               /*****************************SERVER********************************/
 #if DEVICE_IS_BLE_SERVER
               //push button0 is pressed
-              if (evt->data.evt_system_external_signal.extsignals == PUSH_BUTTON0)
+              if (evt->data.evt_system_external_signal.extsignals == PB0_press)
                 {
-                  LOG_INFO("pb0 state");
+                  LOG_INFO("pb0 pressed");
                   if (ble_data.bonding_status == 0) //issue //make flag to confirm passkey (previously conifrmed)
                       sl_bt_sm_passkey_confirm (ble_data.connectionHandle, 1);
 
-                  if ((GPIO_PinInGet (PB_port, PB0_pin) == 0)) //pressed
-                    {
-                      displayPrintf (DISPLAY_ROW_9, "Button Pressed");
+                    displayPrintf (DISPLAY_ROW_9, "Button Pressed");
                       if (ble_data.connect_open && ble_data.bonding_status == 1)
                         {
                           displayPrintf (DISPLAY_ROW_PASSKEY, " ");
                           displayPrintf (DISPLAY_ROW_ACTION, " ");
-                          send_pushbutton_data (1); //1
+                          send_pushbutton_data(1); //1
                         }
-
-                    }
-
-                  else if ((GPIO_PinInGet (PB_port, PB0_pin) == 1)) //released
+                }
+              if (evt->data.evt_system_external_signal.extsignals == PB0_release) //released
                     {
                       displayPrintf (DISPLAY_ROW_9, "Button Released");
                       if (ble_data.connect_open && ble_data.bonding_status == 1)
-                        send_pushbutton_data (0); //0
+                        send_pushbutton_data(0); //0
                     }
-                }
+
 #else
             /*****************************CLIENT********************************/
 
               switch (evt->data.evt_system_external_signal.extsignals)
               {
-                  case PUSH_BUTTON0:
-                      if (GPIO_PinInGet(PB_port, PB0_pin) == 0) // PB0 pressed
-                      {
+                  case PB0_press: //confirm passkey
+                     // if (GPIO_PinInGet(PB_port, PB0_pin) == 0) // PB0 pressed
+                      //{
                           LOG_INFO("pb0 state in client");
                           // Complete the pairing process
                           sl_bt_sm_passkey_confirm(ble_data.connectionHandle, 1);
                           displayPrintf(DISPLAY_ROW_PASSKEY, " ");
                           displayPrintf(DISPLAY_ROW_ACTION, " ");
-                      }
+                     // }
                       break;
 
-                  case PUSH_BUTTON1:
-                      if ((GPIO_PinInGet(PB_port, PB1_pin) == 0) && (GPIO_PinInGet(PB_port, PB0_pin) == 1)) // PB1 pressed, PB0 released
+                  case PB1_press: //pb1 pressed
+                      if (GPIO_PinInGet(PB_port, PB0_pin) == 1) //  PB0 released
                       {
                           LOG_INFO("pb1 state in client");
                           sc = sl_bt_gatt_read_characteristic_value(ble_data.connectionHandle, ble_data.pbcharacteristicsHandle);
@@ -889,82 +884,36 @@ void handle_ble_event (sl_bt_msg_t *evt)
                               LOG_ERROR("sl_bt_gatt_read_characteristic_value() returned != 0 status=0x%04x", (unsigned int) sc);
                       }
                       // Toggle PB0 & PB1 to disable button state indications
-                      else if ((GPIO_PinInGet(PB_port, PB1_pin) == 0) && (GPIO_PinInGet(PB_port, PB0_pin) == 0))
+                      else if (GPIO_PinInGet(PB_port, PB0_pin) == 0)
                       {
+                          LOG_INFO("client toggles pb0 and pb1");
                           if (ble_data.button_state_indication) // If indications are enabled
                           {
+                              LOG_INFO("client disables button indications");
                               sc = sl_bt_gatt_set_characteristic_notification(ble_data.connectionHandle,
                                                                               ble_data.pbcharacteristicsHandle,
                                                                               sl_bt_gatt_disable); // Disable indications
                               if (sc != SL_STATUS_OK)
                                   LOG_ERROR("sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x", (unsigned int) sc);
+                              ble_data.button_state_indication=false;
                           }
                           else // If indications are disabled
                           {
+                              LOG_INFO("button indications status before enabling is %d",ble_data.button_state_indication);
+                               LOG_INFO("client enables button indications");
                               sc = sl_bt_gatt_set_characteristic_notification(ble_data.connectionHandle,
                                                                               ble_data.pbcharacteristicsHandle,
                                                                               sl_bt_gatt_indication); // Enable indications
                               if (sc != SL_STATUS_OK)
                                   LOG_ERROR("sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x", (unsigned int) sc);
+                              ble_data.button_state_indication=true;
                           }
                       }
                       break;
 
                   default:
-                      LOG_INFO("Unhandled button press event");
                       break;
               }
-/*//push button0 is pressed
-            if (evt->data.evt_system_external_signal.extsignals == PUSH_BUTTON0)
-              {
-                if ((GPIO_PinInGet (PB_port, PB0_pin) == 0)) //pb0 pressed
-                  {
-                LOG_INFO("pb0 state in client");
-                  //complete the pairing process
-                    sl_bt_sm_passkey_confirm (ble_data.connectionHandle, 1);
-                    displayPrintf (DISPLAY_ROW_PASSKEY, " ");
-                    displayPrintf (DISPLAY_ROW_ACTION, " ");
-                  }
-              }
-
-            //push button 1 pressed
-            else if (evt->data.evt_system_external_signal.extsignals == PUSH_BUTTON1)
-              {
-                          //read request given to client by pressing PB1
-                if ((GPIO_PinInGet (PB_port, PB1_pin) == 0)&& (GPIO_PinInGet (PB_port, PB0_pin) == 1)) //pb1 pressed and pb0 released
-                {
-                    LOG_INFO("pb1 state in client");
-                sc=sl_bt_gatt_read_characteristic_value(ble_data.connectionHandle,ble_data.pbcharacteristicsHandle);
-                if (sc != SL_STATUS_OK)
-                         LOG_ERROR( "sl_bt_gatt_read_characteristic_value() returned != 0 status=0x%04x",(unsigned int) sc);
-
-                }
-
-                 //toggle the pb0 and pb1 to disable button state indications
-            else if ((GPIO_PinInGet (PB_port, PB1_pin) == 0)&&(GPIO_PinInGet (PB_port, PB0_pin) == 0))
-              {
-                if (ble_data.button_state_indication) //if button indications are enabled
-                  {
-                    sc = sl_bt_gatt_set_characteristic_notification (ble_data.connectionHandle,
-                                                                     ble_data.pbcharacteristicsHandle,
-                                                                     sl_bt_gatt_disable); //disable indications
-                    if (sc != SL_STATUS_OK)
-                       LOG_ERROR(  "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
-                    //ble_data.button_state_indication = false;
-                  }
-                else  //if disabled
-                  {
-                    sc = sl_bt_gatt_set_characteristic_notification ( ble_data.connectionHandle,
-                                                                      ble_data.pbcharacteristicsHandle,
-                                                                      sl_bt_gatt_indication); //enable indications
-                    if (sc != SL_STATUS_OK)
-
-                        LOG_ERROR(  "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
-                 // ble_data.button_state_indication = true;
-                  }
-              }
-
-              }*/
 
 #endif
 

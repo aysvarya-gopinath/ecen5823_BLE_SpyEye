@@ -60,28 +60,35 @@ void GPIO_EVEN_IRQHandler()
 {
   CORE_DECLARE_IRQ_STATE;
   uint32_t flags = GPIO_IntGetEnabled (); // Get only enabled and pending interrupts
-  GPIO_IntClear(flags); //clear pending interrrupts
+  GPIO_IntClear(flags); //clear pending interrupts
   CORE_ENTER_CRITICAL(); // disable NVIC interrupts
   if(flags &(1 << PB0_pin) ) //if PB0 interrupt is set
     {
- schedulerSetEvent_pushbutton0();
+      if ((GPIO_PinInGet(PB_port, PB0_pin) == 0)) // if button pressed
+        schedulerSetEvent_PB0_press();
+       else if ((GPIO_PinInGet(PB_port, PB0_pin) == 1))
+         schedulerSetEvent_PB0_release();
+
     }
   CORE_EXIT_CRITICAL(); //exiting critical sections
 
 }
 
-/* The default handler for the push button  interrupt
+/* The default handler for the push button 1 interrupt
  *  No parameters and return types
  */
 void GPIO_ODD_IRQHandler()
 {
   CORE_DECLARE_IRQ_STATE;
   uint32_t flags = GPIO_IntGetEnabled (); // Get only enabled and pending interrupts
-  GPIO_IntClear(flags); //clear pending interrrupts
+  GPIO_IntClear(flags); //clear pending interrupts
   CORE_ENTER_CRITICAL(); // disable NVIC interrupts
   if(flags &(1 << PB1_pin) ) //if PB1 interrupt is set
     {
- schedulerSetEvent_pushbutton1();
+      if ((GPIO_PinInGet(PB_port, PB1_pin) == 0)) // if button pressed
+        schedulerSetEvent_PB1_press();
+       else if ((GPIO_PinInGet(PB_port, PB1_pin) == 1))
+         schedulerSetEvent_PB1_release();
     }
   CORE_EXIT_CRITICAL(); //exiting critical sections
 }
