@@ -9,7 +9,7 @@
 #include "sl_bt_api.h"
 #include "gatt_db.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 1 //
+#define INCLUDE_LOG_DEBUG 0 //
 #include "src/log.h"
 #include"math.h"
 #include "lcd.h"
