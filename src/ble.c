@@ -450,7 +450,6 @@ void handle_ble_event (sl_bt_msg_t *evt)
         ble_data.inflight_indication = false; //not inflight
         ble_data.htm_indications = false; //htm indications
 
-
         //generate advertising data
         sc = sl_bt_legacy_advertiser_generate_data (
             ble_data.advertisingSetHandle,
