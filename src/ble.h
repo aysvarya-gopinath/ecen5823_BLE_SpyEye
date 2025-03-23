@@ -80,11 +80,11 @@ typedef struct {
 // tracking for button states for the toggle sequence
 typedef enum
 {
-  SEQ_IDLE,           // Waiting for PB0 to start sequence
-  SEQ_PB0_PRESSED,    // PB0 pressed
-  SEQ_PB1_PRESSED,    // PB1 pressed after PB0
-  SEQ_PB1_RELEASED,   // PB1 released after pressing
-  SEQ_PB0_RELEASED // PB0 released after PB1 was pressed and released (complete sequence)
+  TOGGLE_SEQ_START,           // start sequence
+  TOGGLE_SEQ_PB0_PRESSED,    // PB0 pressed
+  TOGGLE_SEQ_PB1_PRESSED,    // PB1 pressed after PB0
+  TOGGLE_SEQ_PB1_RELEASED,   // PB1 released
+  TOGGLE_SEQ_PB0_RELEASED // PB0 released after PB1 was pressed and released (complete sequence)
 } button_sequence_state_t;
 
 

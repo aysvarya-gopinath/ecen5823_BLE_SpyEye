@@ -15,7 +15,7 @@
 
 #include "em_gpio.h"
 // Include logging for this file
-#define INCLUDE_LOG_DEBUG 1
+#define INCLUDE_LOG_DEBUG 0
 #include "src/log.h"
 
  uint32_t roll_over=0; // counter to hold the underflow counts
