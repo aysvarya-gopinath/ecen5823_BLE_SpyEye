@@ -77,14 +77,15 @@ typedef struct {
 
 } queue_struct_t;
 
-
-typedef enum uint8_t {
-  button_state1,
-  button_state2,
-  button_state3,
-  button_state4,
-  button_state5,
-  } button_state_t;
+// tracking for button states for the toggle sequence
+typedef enum
+{
+  SEQ_IDLE,           // Waiting for PB0 to start sequence
+  SEQ_PB0_PRESSED,    // PB0 pressed
+  SEQ_PB1_PRESSED,    // PB1 pressed after PB0
+  SEQ_PB1_RELEASED,   // PB1 released after pressing
+  SEQ_PB0_RELEASED // PB0 released after PB1 was pressed and released (complete sequence)
+} button_sequence_state_t;
 
 
 //enqueue an element in the cbfifo

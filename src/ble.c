@@ -196,14 +196,14 @@ void send_temp_ble(int32_t temp_deg){
             }
           else
             { ble_data.inflight_indication = INFLIGHT; //mark as in transit
-            LOG_INFO("sending data to the client for htm directly");
+           // LOG_INFO("sending data to the client for htm directly");
             }
 
         }
       else           //if queue is not empty and inflight
         {
           //displayPrintf (DISPLAY_ROW_TEMPVALUE, "");  //clear temp
-          LOG_INFO("writing data to the queue for htm");
+         // LOG_INFO("writing data to the queue for htm");
           write_queue (gattdb_temperature_measurement, 5,
                        htm_temperature_buffer);
            }
@@ -246,14 +246,14 @@ void send_pushbutton_data(uint8_t pb_data)
             }
           else
             { ble_data.inflight_indication = true; // indications are inflight
-            LOG_INFO("sending data to the client for button directly");
+           // LOG_INFO("sending data to the client for button directly");
             }
         }
       else
         {
           isEmpty = write_queue (gattdb_button_state, sizeof(uint8_t),
                                  (uint8_t*) &pb_data);
-          LOG_INFO("writing data to the queue for button");
+          //LOG_INFO("writing data to the queue for button");
           if (isEmpty == true)
             LOG_ERROR("circular buffer is full\n\r");
         }
@@ -548,7 +548,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
 /////////////////////////////////////////GATT SERVER CHARACTERSITICS/////////////////////////////////////
     case sl_bt_evt_gatt_server_characteristic_status_id:
       {
-        LOG_INFO("change in cccd, indications");
+      //  LOG_INFO("change in cccd, indications");
         /*----------------------------- TEMPERATURE MEASUREMENT-------------------------*/
         if (evt->data.evt_gatt_server_characteristic_status.characteristic
             == gattdb_temperature_measurement)
@@ -581,7 +581,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
                               // && (get_queue_depth () > 0))
                                //&& (ble_data.bonding_status == 1))
                              // {
-                                LOG_INFO("bonding status before dequeue in temp char %d",ble_data.bonding_status);
+                               // LOG_INFO("bonding status before dequeue in temp char %d",ble_data.bonding_status);
                                 isFull = read_queue (&charHandle, &bufLength, buffer);
                                 if (isFull == true)
                                   LOG_ERROR("circular buffer is empty\n\r");
@@ -622,24 +622,24 @@ void handle_ble_event (sl_bt_msg_t *evt)
                   {
                     ble_data.button_state_indication = true; //enabled button press indications
                     gpioLed1SetOn (); //turn on LED1 when button press indications are enabled
-                    LOG_INFO("button indications enabled");
+                    //LOG_INFO("button indications enabled");
                   } // sl_bt_gatt_server_indication
                 else
                   {
                     ble_data.button_state_indication = false; //disabled  button_pressed indication
                     gpioLed1SetOff (); //turn off LED0 when button press indications are disabled
-                    LOG_INFO("button indications disabled");
+                  //  LOG_INFO("button indications disabled");
                   }
               }  //sl_bt_gatt_server_client_config
             if (evt->data.evt_gatt_server_characteristic_status.status_flags
                 == sl_bt_gatt_server_confirmation) //client acknowledged indication
               {
-                LOG_INFO("client confirmation for button");
+               // LOG_INFO("client confirmation for button");
                 ble_data.inflight_indication = NOT_INFLIGHT; //clear inflight flag
               // if ((ble_data.button_state_indication == true) && (get_queue_depth () > 0))
                    // && (ble_data.bonding_status == 1))  //if values in  queue
                  // {
-                   LOG_INFO("bonding status before dequeue in temp char %d",ble_data.bonding_status);
+                  // LOG_INFO("bonding status before dequeue in temp char %d",ble_data.bonding_status);
                     isFull = read_queue (&charHandle, &bufLength, buffer);
                    // if (isFull == true)
                     //  LOG_ERROR("circular buffer is empty\n\r");
@@ -657,7 +657,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
                         else
                           {
                             ble_data.inflight_indication = true;
-                          LOG_INFO("sending value to client from the queue for push button");
+                          //LOG_INFO("sending value to client from the queue for push button");
                           }
                      // }
 
@@ -672,7 +672,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
 ////////////////////////////////////////////SERVER TIMEOUT///////////////////////////////////////////////////////////
     case sl_bt_evt_gatt_server_indication_timeout_id:
       {
-        LOG_INFO("server timeout");
+       // LOG_INFO("server timeout");
         ble_data.connect_open = false; //connection is closed
         ble_data.htm_indications = false;
         ble_data.inflight_indication = NOT_INFLIGHT; // indication not in flight
@@ -721,12 +721,12 @@ void handle_ble_event (sl_bt_msg_t *evt)
          if (uuid_length == 2 && memcmp(uuid, thermo_service, 2) == 0) {
              // Save the service handle of the temperature service
              ble_data.htmserviceHandle = evt->data.evt_gatt_service.service;
-             LOG_INFO("htm service handle saved");
+             ///LOG_INFO("htm service handle saved");
          }
           if (uuid_length == 16 && memcmp(uuid, pb_service, 16) == 0) {
              // Save the service handle of the button state service
              ble_data.pbserviceHandle = evt->data.evt_gatt_service.service;
-             LOG_INFO("pb service handle saved");
+            // LOG_INFO("pb service handle saved");
          }
 
       }
@@ -740,12 +740,12 @@ void handle_ble_event (sl_bt_msg_t *evt)
                  if (uuid_length == 2 && memcmp(uuid, thermo_char, 2) == 0) {
                      //save the characteristics handle of the temperature service
                      ble_data.htmcharacteristicsHandle = evt->data.evt_gatt_characteristic.characteristic;
-                     LOG_INFO("htm char handle saved");
+                     //LOG_INFO("htm char handle saved");
                  }
                 if (uuid_length == 16 && memcmp(uuid, pb_char, 16) == 0) {
                      //save the characteristics handle of the button state service
                      ble_data.pbcharacteristicsHandle= evt->data.evt_gatt_characteristic.characteristic;
-                     LOG_INFO("pb char handle saved");
+                    // LOG_INFO("pb char handle saved");
                  }
       }
 
@@ -766,7 +766,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
 ///////////////////////////////////////////////CHARACTERICTIC VALUE RECEIVED//////////////////////////////////////////
     case sl_bt_evt_gatt_characteristic_value_id:
       {
-      LOG_INFO("charcateristic value received");
+     // LOG_INFO("charcateristic value received");
         //htm characteristics
         if ((evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication)&&
             (evt->data.evt_gatt_characteristic_value.characteristic == ble_data.htmcharacteristicsHandle)) //desired characteristics handle
@@ -785,23 +785,24 @@ void handle_ble_event (sl_bt_msg_t *evt)
             if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication ||
                              evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_read_response)
                             {
-                LOG_INFO("charcateristic value received for button");
-                uint8_t received_value = evt->data.evt_gatt_characteristic_value.value.data[0];
-                LOG_INFO("BUTTON STATE: %u\r", received_value);
-            if (received_value == 1)
+                //LOG_INFO("charcateristic value received for button");
+                //uint8_t received_value = evt->data.evt_gatt_characteristic_value.value.data[0];
+                //sending confirmation for the received indication from server
+
+            if (evt->data.evt_gatt_characteristic_value.value.data[0] == 1)
               displayPrintf (DISPLAY_ROW_9, "Button Pressed");
 
             else
               displayPrintf (DISPLAY_ROW_9, "Button Released");
-                            }
-            if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication)
-                                      {
-                      //sending confirmation for the received indication from server
-                      sc = sl_bt_gatt_send_characteristic_confirmation (ble_data.connectionHandle);
-                      if (sc != SL_STATUS_OK)
-                          LOG_ERROR("sl_bt_gatt_send_characteristic_confirmation() for button state returned != 0 status=0x%04x",(unsigned int) sc);
+            sc = sl_bt_gatt_send_characteristic_confirmation (ble_data.connectionHandle);
+            if (sc != SL_STATUS_OK)
+                  LOG_ERROR("sl_bt_gatt_send_characteristic_confirmation() for button state returned != 0 status=0x%04x",(unsigned int) sc);
 
-                        }//sl_bt_gatt_handle_value_indication
+                            }
+         //   if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication)
+                                     // {
+
+                        //}//sl_bt_gatt_handle_value_indication
 
           }//button state characterictics
 
@@ -812,7 +813,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
       //////////////////////////////////////////BONDING REQUEST RECEIVED//////////////////////////////////////////////////////////
           case sl_bt_evt_sm_confirm_bonding_id:
             {
-              LOG_INFO("bonding request received");
+
               sc = sl_bt_sm_bonding_confirm (ble_data.connectionHandle, 0x01); //accept the bonding request
               if (sc != SL_STATUS_OK)
                 LOG_ERROR("Failed accept bonding request\n\r");
@@ -822,7 +823,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
       /////////////////////////////////////////////PASSKEY DISPLAY////////////////////////////////////////////////////
           case sl_bt_evt_sm_confirm_passkey_id:
             {
-              LOG_INFO("passkey displayed waiting for user confirmation");
+
               if (ble_data.connectionHandle
                   != evt->data.evt_sm_confirm_passkey.connection)
                 LOG_ERROR("Failed to confirm pass key\n\r");
@@ -839,13 +840,13 @@ void handle_ble_event (sl_bt_msg_t *evt)
       ///////////////////////////////////////////EXTERNAL SIGNAL RECEIVED/////////////////////////////////////////////////////////
           case sl_bt_evt_system_external_signal_id:
             {
-LOG_INFO("external signals event");
+
               /*****************************SERVER********************************/
 #if DEVICE_IS_BLE_SERVER
               //push button0 is pressed
               if (evt->data.evt_system_external_signal.extsignals == PB0_press)
                 {
-                  LOG_INFO("pb0 pressed");
+
                   if (ble_data.bonding_status == 0) //issue //make flag to confirm passkey (previously conifrmed)
                       sl_bt_sm_passkey_confirm (ble_data.connectionHandle, 1);
 
@@ -866,99 +867,65 @@ LOG_INFO("external signals event");
 
 #else
             /*****************************CLIENT********************************/
-                  uint32_t eventValue = evt->data.evt_system_external_signal.extsignals; //holds all the enabled signals
-              static button_state_t nextState = button_state1;
-              button_state_t current_state = nextState;
-            switch (current_state)
+
+              static button_sequence_state_t button_sequence_state = SEQ_IDLE; // Start in IDLE state
+
+              switch (evt->data.evt_system_external_signal.extsignals)
               {
-              case button_state1:
-                {
-                nextState = button_state1;
-                if (eventValue & PB1_press) //only pb1 is pressed
-                  {
-                    if (GPIO_PinInGet (PB_port, PB0_pin) == 1)
-                      { //only if pb1 pressed and pb0 released
-                        LOG_INFO("pb1 state in client pressed"); //only pb1 , initiate a read request to the server
-                        sc = sl_bt_gatt_read_characteristic_value (
-                            ble_data.connectionHandle,
-                            ble_data.pbcharacteristicsHandle);
-                        if (sc != SL_STATUS_OK)
-                          LOG_ERROR(
-                              "sl_bt_gatt_read_characteristic_value() returned != 0 status=0x%04x",
-                              (unsigned int) sc);
-                        nextState = button_state2;
-                      }
-                  }
-                 if (eventValue & PB0_press)
-                  nextState = button_state2;
-                break;
-                }
-     case button_state2:
-                nextState = button_state2;
-                if (eventValue & PB0_press) //pb0 pressed
-                  {
-                    if (ble_data.bonding_status == 1) //if already bonded, then pb0 and pb1 sequence is anticipated
-                      nextState = button_state3;
-                     if (ble_data.bonding_status == 0)
-                                           {
-                                             LOG_INFO("pb0 pressed in client");
-                                             // Complete the pairing process
-                                             sl_bt_sm_passkey_confirm (ble_data.connectionHandle, 1);
-                                             displayPrintf (DISPLAY_ROW_PASSKEY, " ");
-                                             displayPrintf (DISPLAY_ROW_ACTION, " ");
-                                                                                       // }
-                                             }
-                  }
-              if (eventValue & PB1_press)
-                  nextState = button_state1;
-                break;
+                case PB0_press: // PB0 is pressed
+                    if (GPIO_PinInGet(PB_port, PB1_pin) == 1) { // PB1 released
+                        if (ble_data.bonding_status == 0) { // First-time bonding
+                            sl_bt_sm_passkey_confirm(ble_data.connectionHandle, 1);
+                            displayPrintf(DISPLAY_ROW_PASSKEY, " ");
+                            displayPrintf(DISPLAY_ROW_ACTION, " ");
+                        } else  // Track sequence for indication toggle
+                            button_sequence_state = SEQ_PB0_PRESSED;
 
-              case button_state3:
-                nextState = button_state3;
-                if (eventValue & PB1_press) //pb1 pressed
-                  {
-                    if (GPIO_PinInGet (PB_port, PB0_pin) == 0)//if pb0 is pressed initially ,beforepb1 being pressed then transition
-                      nextState = button_state4;
-                  }
-                break;
+                    }
+                    break;
 
-              case button_state4:
-                nextState = button_state4;
-                if (eventValue & PB1_release) //pb1 released
-                    nextState = button_state5;
-                break;
-              case button_state5:
-                nextState = button_state5; // pb0 released
-                if (eventValue & PB0_release) //pb0 and pb1 sequence has occurred
-                  {
-                    if (ble_data.button_state_indication) // If indications are enabled
-                      {
-                        LOG_INFO("client disables button indications");
-                        sc = sl_bt_gatt_set_characteristic_notification (
-                            ble_data.connectionHandle,
-                            ble_data.pbcharacteristicsHandle,
-                            sl_bt_gatt_disable); // Disable indications
+                case PB1_press: // PB1 is pressed
+                    if (GPIO_PinInGet(PB_port, PB0_pin) == 1) { // PB0 released
+                        //LOG_INFO("PB1 Pressed: Triggering Read Characteristic Value");
+                        sc = sl_bt_gatt_read_characteristic_value(ble_data.connectionHandle, ble_data.pbcharacteristicsHandle);
                         if (sc != SL_STATUS_OK)
-                          LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
-                        ble_data.button_state_indication = false;
-                      }
-                    else // If indications are disabled
-                      {
-                        LOG_INFO("button indications status before enabling is %d", ble_data.button_state_indication);
-                        LOG_INFO("client enables button indications");
-                        sc = sl_bt_gatt_set_characteristic_notification ( ble_data.connectionHandle,
-                                                                          ble_data.pbcharacteristicsHandle,
-                                                                          sl_bt_gatt_indication); // Enable indications
-                        if (sc != SL_STATUS_OK)
-                          LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
-                        ble_data.button_state_indication = true;
-                      }
-                    nextState = button_state1;
-                  }
-                break;
-              default :
-                break;
-                }
+                            LOG_ERROR("sl_bt_gatt_read_characteristic_value() failed, status=0x%04x", (unsigned int)sc);
+                    } else { // PB0 is pressed, continue sequence
+                        if (button_sequence_state == SEQ_PB0_PRESSED)
+                              button_sequence_state = SEQ_PB1_PRESSED;
+
+                    }
+                    break;
+
+                case PB1_release: // PB1 is released
+                    if (button_sequence_state == SEQ_PB1_PRESSED)
+                          button_sequence_state = SEQ_PB1_RELEASED;
+                    break;
+
+                case PB0_release: // PB0 is released
+                    if (button_sequence_state == SEQ_PB1_RELEASED) {
+
+                        if (ble_data.button_state_indication) { // Disable indications
+                            sc = sl_bt_gatt_set_characteristic_notification(ble_data.connectionHandle, ble_data.pbcharacteristicsHandle, sl_bt_gatt_disable);
+                            if (sc != SL_STATUS_OK)
+                                LOG_ERROR("sl_bt_gatt_set_characteristic_notification() failed, status=0x%04x", (unsigned int)sc);
+                            ble_data.button_state_indication = false;
+                        } else { // Enable indications
+                            sc = sl_bt_gatt_set_characteristic_notification(ble_data.connectionHandle, ble_data.pbcharacteristicsHandle, sl_bt_gatt_indication);
+                            if (sc != SL_STATUS_OK)
+                                LOG_ERROR("sl_bt_gatt_set_characteristic_notification() failed, status=0x%04x", (unsigned int)sc);
+                            ble_data.button_state_indication = true;
+                        }
+                        button_sequence_state = SEQ_IDLE; // Reset sequence
+                    }
+                    break;
+
+                  default:
+                      break;
+              }
+
+
+
 #endif
 
               break;
@@ -968,7 +935,6 @@ LOG_INFO("external signals event");
       //////////////////////////////////////////////////BONDING SUCCESSFULL//////////////////////////////////////////////////
           case sl_bt_evt_sm_bonded_id:
             {
-              LOG_INFO("bonding successfull");
               ble_data.bonding_status = 1;     //saving bonding status
               displayPrintf (DISPLAY_ROW_CONNECTION, "Bonded");
               displayPrintf (DISPLAY_ROW_PASSKEY, " ");
@@ -979,7 +945,6 @@ LOG_INFO("external signals event");
       ///////////////////////////////////////////////BONDING FAILED/////////////////////////////////////////////////////////////
           case sl_bt_evt_sm_bonding_failed_id:
             {
-              LOG_INFO("bonding failed");
               ble_data.bonding_status = 0;
               displayPrintf (DISPLAY_ROW_CONNECTION, "Bonding Failed");
               LOG_ERROR("bonding failed");
