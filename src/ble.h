@@ -55,9 +55,6 @@ uint32_t htmserviceHandle; //service handle for htm
 uint32_t htmcharacteristicsHandle; //characteristics handle for htm
  uint32_t pbserviceHandle;//service handle for push button
  uint32_t pbcharacteristicsHandle;//characteristics handle for htm for push button
-
-
-
 } ble_data_struct_t;
 
 #define QUEUE_DEPTH      (16)
@@ -79,6 +76,16 @@ typedef struct {
                                              //   error, as well as lengths > 5
 
 } queue_struct_t;
+
+
+typedef enum uint8_t {
+  button_state1,
+  button_state2,
+  button_state3,
+  button_state4,
+  button_state5,
+  } button_state_t;
+
 
 //enqueue an element in the cbfifo
 bool     write_queue      (uint16_t  charHandle, uint32_t  bufLength, uint8_t *buffer);

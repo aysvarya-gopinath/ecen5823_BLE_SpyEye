@@ -178,8 +178,7 @@ void Si7021_state_machine(sl_bt_msg_t *evt)
 /*The discovery state machine performs the services and characteristics discovery operations
  *Event is passed as the parameter and no return types
  */
-void
-discovery_state_machine (sl_bt_msg_t *evt)
+void discovery_state_machine (sl_bt_msg_t *evt)
 {
   sl_status_t sc;
   ble_data_struct_t *ble_data_ptr = get_ble_dataPtr (); //pointer to the ble_data structure

@@ -839,7 +839,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
       ///////////////////////////////////////////EXTERNAL SIGNAL RECEIVED/////////////////////////////////////////////////////////
           case sl_bt_evt_system_external_signal_id:
             {
-
+LOG_INFO("external signals event");
               /*****************************SERVER********************************/
 #if DEVICE_IS_BLE_SERVER
               //push button0 is pressed
@@ -866,60 +866,99 @@ void handle_ble_event (sl_bt_msg_t *evt)
 
 #else
             /*****************************CLIENT********************************/
-
-              switch (evt->data.evt_system_external_signal.extsignals)
+                  uint32_t eventValue = evt->data.evt_system_external_signal.extsignals; //holds all the enabled signals
+              static button_state_t nextState = button_state1;
+              button_state_t current_state = nextState;
+            switch (current_state)
               {
-                  case PB0_press: //confirm passkey
-                     // if (GPIO_PinInGet(PB_port, PB0_pin) == 0) // PB0 pressed
-                      //{
-                          LOG_INFO("pb0 state in client");
-                          // Complete the pairing process
-                          sl_bt_sm_passkey_confirm(ble_data.connectionHandle, 1);
-                          displayPrintf(DISPLAY_ROW_PASSKEY, " ");
-                          displayPrintf(DISPLAY_ROW_ACTION, " ");
-                     // }
-                      break;
-
-                  case PB1_press: //pb1 pressed
-                      if (GPIO_PinInGet(PB_port, PB0_pin) == 1) //  PB0 released
-                      {
-                          LOG_INFO("pb1 state in client");
-                          sc = sl_bt_gatt_read_characteristic_value(ble_data.connectionHandle, ble_data.pbcharacteristicsHandle);
-                          if (sc != SL_STATUS_OK)
-                              LOG_ERROR("sl_bt_gatt_read_characteristic_value() returned != 0 status=0x%04x", (unsigned int) sc);
+              case button_state1:
+                {
+                nextState = button_state1;
+                if (eventValue & PB1_press) //only pb1 is pressed
+                  {
+                    if (GPIO_PinInGet (PB_port, PB0_pin) == 1)
+                      { //only if pb1 pressed and pb0 released
+                        LOG_INFO("pb1 state in client pressed"); //only pb1 , initiate a read request to the server
+                        sc = sl_bt_gatt_read_characteristic_value (
+                            ble_data.connectionHandle,
+                            ble_data.pbcharacteristicsHandle);
+                        if (sc != SL_STATUS_OK)
+                          LOG_ERROR(
+                              "sl_bt_gatt_read_characteristic_value() returned != 0 status=0x%04x",
+                              (unsigned int) sc);
+                        nextState = button_state2;
                       }
-                      // Toggle PB0 & PB1 to disable button state indications
-                      else if (GPIO_PinInGet(PB_port, PB0_pin) == 0)
+                  }
+                 if (eventValue & PB0_press)
+                  nextState = button_state2;
+                break;
+                }
+     case button_state2:
+                nextState = button_state2;
+                if (eventValue & PB0_press) //pb0 pressed
+                  {
+                    if (ble_data.bonding_status == 1) //if already bonded, then pb0 and pb1 sequence is anticipated
+                      nextState = button_state3;
+                     if (ble_data.bonding_status == 0)
+                                           {
+                                             LOG_INFO("pb0 pressed in client");
+                                             // Complete the pairing process
+                                             sl_bt_sm_passkey_confirm (ble_data.connectionHandle, 1);
+                                             displayPrintf (DISPLAY_ROW_PASSKEY, " ");
+                                             displayPrintf (DISPLAY_ROW_ACTION, " ");
+                                                                                       // }
+                                             }
+                  }
+              if (eventValue & PB1_press)
+                  nextState = button_state1;
+                break;
+
+              case button_state3:
+                nextState = button_state3;
+                if (eventValue & PB1_press) //pb1 pressed
+                  {
+                    if (GPIO_PinInGet (PB_port, PB0_pin) == 0)//if pb0 is pressed initially ,beforepb1 being pressed then transition
+                      nextState = button_state4;
+                  }
+                break;
+
+              case button_state4:
+                nextState = button_state4;
+                if (eventValue & PB1_release) //pb1 released
+                    nextState = button_state5;
+                break;
+              case button_state5:
+                nextState = button_state5; // pb0 released
+                if (eventValue & PB0_release) //pb0 and pb1 sequence has occurred
+                  {
+                    if (ble_data.button_state_indication) // If indications are enabled
                       {
-                          LOG_INFO("client toggles pb0 and pb1");
-                          if (ble_data.button_state_indication) // If indications are enabled
-                          {
-                              LOG_INFO("client disables button indications");
-                              sc = sl_bt_gatt_set_characteristic_notification(ble_data.connectionHandle,
-                                                                              ble_data.pbcharacteristicsHandle,
-                                                                              sl_bt_gatt_disable); // Disable indications
-                              if (sc != SL_STATUS_OK)
-                                  LOG_ERROR("sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x", (unsigned int) sc);
-                              ble_data.button_state_indication=false;
-                          }
-                          else // If indications are disabled
-                          {
-                              LOG_INFO("button indications status before enabling is %d",ble_data.button_state_indication);
-                               LOG_INFO("client enables button indications");
-                              sc = sl_bt_gatt_set_characteristic_notification(ble_data.connectionHandle,
-                                                                              ble_data.pbcharacteristicsHandle,
-                                                                              sl_bt_gatt_indication); // Enable indications
-                              if (sc != SL_STATUS_OK)
-                                  LOG_ERROR("sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x", (unsigned int) sc);
-                              ble_data.button_state_indication=true;
-                          }
+                        LOG_INFO("client disables button indications");
+                        sc = sl_bt_gatt_set_characteristic_notification (
+                            ble_data.connectionHandle,
+                            ble_data.pbcharacteristicsHandle,
+                            sl_bt_gatt_disable); // Disable indications
+                        if (sc != SL_STATUS_OK)
+                          LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
+                        ble_data.button_state_indication = false;
                       }
-                      break;
-
-                  default:
-                      break;
-              }
-
+                    else // If indications are disabled
+                      {
+                        LOG_INFO("button indications status before enabling is %d", ble_data.button_state_indication);
+                        LOG_INFO("client enables button indications");
+                        sc = sl_bt_gatt_set_characteristic_notification ( ble_data.connectionHandle,
+                                                                          ble_data.pbcharacteristicsHandle,
+                                                                          sl_bt_gatt_indication); // Enable indications
+                        if (sc != SL_STATUS_OK)
+                          LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
+                        ble_data.button_state_indication = true;
+                      }
+                    nextState = button_state1;
+                  }
+                break;
+              default :
+                break;
+                }
 #endif
 
               break;
