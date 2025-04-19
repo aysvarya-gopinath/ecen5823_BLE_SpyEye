@@ -197,7 +197,7 @@ SL_WEAK void app_init(void)
  * comment out this function. Wait loops are a bad idea in general.
  * We'll discuss how to do this a better way in the next assignment.
  *****************************************************************************/
-/*static void delayApprox(int delay)
+static void delayApprox(int delay)
 {
   volatile int i;
 
@@ -206,7 +206,7 @@ SL_WEAK void app_init(void)
   }
 
 } // delayApprox()
-*/
+
 
 
 
@@ -231,6 +231,18 @@ SL_WEAK void app_process_action(void)
 
 //uint32_t evt = getNextEvent(); //get the events set by the interrupts
  //Si7021_state_machine(evt); //start the state machine
+
+  int motion_detected = GPIO_PinInGet(PA_port, PIR_sensor_pin);
+  LOG_INFO("\n\r PIR read value: %d \n", motion_detected);
+  if (motion_detected) {
+      LOG_INFO("\n\r motion detected \n");
+      GPIO_PinOutToggle(LED_port, LED0_pin);
+      delayApprox(1000);
+  } else {
+      LOG_INFO("\n\r motion not detected \n");
+  }
+
+
  } // app_process_action()
 
 
@@ -271,3 +283,4 @@ discovery_state_machine(evt);
 
 
 } // sl_bt_on_event()
+

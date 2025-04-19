@@ -57,6 +57,14 @@ void gpioInit ()
    //configure the gpio external pin interrupt
    GPIO_ExtIntConfig (PB_port, PB1_pin, PB1_pin, true, true, true);
 
+   //set the pir sensor pin as input
+   GPIO_PinModeSet(PA_port, PIR_sensor_pin, gpioModeInputPull, 0);
+
+  // GPIO_PinModeSet (PA_port, PIR_sensor_pin, gpioModeInput, true);
+   //configure the pir sensor pin interrupt
+ //  GPIO_ExtIntConfig (PA_port, PIR_sensor_pin,PIR_sensor_pin, true, true, true);
+
+
 } // gpioInit()
 
 /*Function to turn on the temperature sensor

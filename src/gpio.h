@@ -49,6 +49,10 @@ gpio.h
 #define PB0_pin (6)  //PF6
 #define PB1_pin (7) //PF7
 
+//expansion pin 3
+#define PA_port (gpioPortA)
+#define PIR_sensor_pin (2) //PA2
+
 
 // Function prototypes
 void gpioInit();
