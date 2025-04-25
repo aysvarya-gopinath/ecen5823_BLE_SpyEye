@@ -52,6 +52,7 @@
 #include"sl_bt_api.h"
 #include "src/ble.h"
 #include "em_gpio.h"
+#include "src/opt3001.h"
 // *************************************************
 // Students: It is OK to modify this file.
 //           Make edits appropriate for each
@@ -154,6 +155,23 @@ sl_power_manager_on_isr_exit_t app_sleep_on_isr_exit(void)
 #endif // defined(SL_CATALOG_POWER_MANAGER_PRESENT)
 
 
+/*****************************************************************************
+ * delayApprox(), private to this file.
+ * A value of 3500000 is ~ 1 second. After assignment 1 you can delete or
+ * comment out this function. Wait loops are a bad idea in general.
+ * We'll discuss how to do this a better way in the next assignment.
+ *****************************************************************************/
+static void delayApprox(int delay)
+{
+  volatile int i;
+
+  for (i = 0; i < delay; ) {
+      i=i+1;
+  }
+
+} // delayApprox()
+
+
 
 
 /**************************************************************************//**
@@ -186,26 +204,12 @@ SL_WEAK void app_init(void)
   NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
    NVIC_EnableIRQ(GPIO_ODD_IRQn); //enabling the GPIO interrupt for push button1
   i2c_init (); //initialize i2c
+  delayApprox(100);
+  opt3001_init(); //initilaise the i2c for light sensor
 } // app_init()
 
 
 
-
-/*****************************************************************************
- * delayApprox(), private to this file.
- * A value of 3500000 is ~ 1 second. After assignment 1 you can delete or
- * comment out this function. Wait loops are a bad idea in general.
- * We'll discuss how to do this a better way in the next assignment.
- *****************************************************************************/
-static void delayApprox(int delay)
-{
-  volatile int i;
-
-  for (i = 0; i < delay; ) {
-      i=i+1;
-  }
-
-} // delayApprox()
 
 
 
@@ -222,26 +226,14 @@ SL_WEAK void app_process_action(void)
   //         We will create/use a scheme that is far more energy efficient in
   //         later assignments.
 
+  // Read data from the sensor
+     opt3001_read_data();
 
+     // Convert and print lux value
+     opt3001_conversion();
 
-  /* UNIT TEST FUNCTION FOR TIMER WAIT (NON-BLOCKING)
-   * un-comment this function to run the test
-   */
-  // unit_test_timerWaitIrq();
-
-//uint32_t evt = getNextEvent(); //get the events set by the interrupts
- //Si7021_state_machine(evt); //start the state machine
-
-  int motion_detected = GPIO_PinInGet(PA_port, PIR_sensor_pin);
-  LOG_INFO("\n\r PIR read value: %d \n", motion_detected);
-  if (motion_detected) {
-      LOG_INFO("\n\r motion detected \n");
-      GPIO_PinOutToggle(LED_port, LED0_pin);
-      delayApprox(1000);
-  } else {
-      LOG_INFO("\n\r motion not detected \n");
-  }
-
+     // Delay or wait
+     delayApprox(1000);
 
  } // app_process_action()
 
@@ -269,12 +261,12 @@ void sl_bt_on_event(sl_bt_msg_t *evt)
   // Some events require responses from our application code,
   // and don’t necessarily advance our state machines.
   // For A5 uncomment the next 2 function calls
-   handle_ble_event(evt); //event responder
+  // handle_ble_event(evt); //event responder
 
 #if DEVICE_IS_BLE_SERVER
 // SERVER
 // sequence through states driven by events
-   Si7021_state_machine(evt);
+   //Si7021_state_machine(evt);
 #else
 //CLIENT
 // sequence through service and characteristic discovery

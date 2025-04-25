@@ -18,7 +18,7 @@
 
 #include "lcd.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 0
+#define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"
 
 uint8_t  read_data[ 2 ]; //to hold sensor data
@@ -32,6 +32,8 @@ static I2C_TransferSeq_TypeDef transferSequence;
  */
 void i2c_init ()
 {
+
+      LOG_INFO("i2c initilaised");
   static I2CSPM_Init_TypeDef I2C_Config =
     {
           .port            = I2C0,

@@ -10,8 +10,8 @@
 
 #include"em_i2c.h"
 
-#define SCL_pin    (10) //PC10
-#define SDA_pin     (11)//PC11
+#define SCL_pin    (10)  //PC10  I2C_SCL
+#define SDA_pin     (11)//I2C_SDA  PC11
 #define SI7021_DEVICE_ADDR  (0x40)// slave address 0x40
 #define MEASURE_TEMP_NO_HOLD_MASTER (0XF3)//Measure Temperature, No Hold Master Mode 0xF3
 #define MAX_16bit (65536)
