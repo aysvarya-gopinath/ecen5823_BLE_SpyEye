@@ -226,7 +226,7 @@ SL_WEAK void app_process_action(void)
   //         later assignments.
 
         //i2c_scan_bus();
-
+      config_read();
      delayApprox(100);
       veml6030_read_data();
            // Convert and print lux value

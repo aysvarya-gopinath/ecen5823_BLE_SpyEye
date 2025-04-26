@@ -19,6 +19,7 @@
 // VEML6030 Registers
 #define VEML6030_REG_CONFIG    0x00  // command code configuration register address
 #define VEML6030_REG_RESULT   0x04   //command code for data output register
+#define CONFIG_CODE (0x1060)//(0x1000) //0001000001100000
 
 void veml6030_init(void);
 void veml6030_read_data(void);
@@ -26,4 +27,5 @@ void veml6030_conversion(void);
 void veml6030_I2C_IRQHandler(void);
 void veml6030_write_register(uint8_t reg, uint16_t value);
 void i2c_scan_bus(void);
+void config_read(void);
 #endif // VEML6030_H

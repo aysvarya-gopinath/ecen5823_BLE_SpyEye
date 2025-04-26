@@ -23,7 +23,6 @@
 uint8_t read_lux[2];  // Holds the light sensor data
 uint16_t light_data;   // Variable to store light level (lux)
 static I2C_TransferSeq_TypeDef transferSequence;
-uint16_t config_code = 0x1000; //0001000000000000
 
 /*void i2c_scan_bus(void) {
     I2C_TransferSeq_TypeDef seq;
@@ -74,9 +73,73 @@ void veml6030_write_register(uint8_t reg, uint16_t value) {
 /* Initialize I2C for veml6030 sensor */
 void veml6030_init(void) {
   // Configure veml6030 to continuous conversion mode
-  veml6030_write_register(VEML6030_REG_CONFIG,config_code);
+  veml6030_write_register(VEML6030_REG_CONFIG,CONFIG_CODE);
   LOG_INFO("ambient light sensor initialized");
 }
+
+
+void config_read(void)
+{
+
+  LOG_INFO("Reading the register configuration");
+  uint8_t reg_address = VEML6030_REG_CONFIG;
+  uint8_t config_data[2];
+  I2C_TransferReturn_TypeDef transferStatus;
+
+  // Write the register address
+  transferSequence.addr = VEML6030_I2C_ADDR << 1;
+  transferSequence.flags = I2C_FLAG_WRITE;
+  transferSequence.buf[0].data = &reg_address;
+  transferSequence.buf[0].len = 1;
+
+  transferStatus = I2CSPM_Transfer(I2C0, &transferSequence);
+  if (transferStatus != i2cTransferDone)
+      LOG_ERROR("I2C write failed with status %d\n", transferStatus);
+
+  // Read 2 bytes from the configuration register
+  transferSequence.addr = VEML6030_I2C_ADDR << 1;
+  transferSequence.flags = I2C_FLAG_READ;
+  transferSequence.buf[0].data = config_data;
+  transferSequence.buf[0].len = 2;
+
+  transferStatus = I2CSPM_Transfer(I2C0, &transferSequence);
+  if (transferStatus != i2cTransferDone)
+      LOG_ERROR("I2C read failed with status %d\n", transferStatus);
+
+
+  // Combine LSB and MSB
+  uint16_t config_value = config_data[0] | (config_data[1] << 8);
+  uint8_t gain_bits = (config_value >> 11) & 0x03;
+     uint8_t it_bits = (config_value >> 6) & 0x0F;
+
+     // Interpret gain
+     const char* gain_str;
+     switch (gain_bits) {
+         case 0x00: gain_str = "Gain x1"; break;
+         case 0x01: gain_str = "Gain x2"; break;
+         case 0x02: gain_str = "Gain x1/8"; break;
+         case 0x03: gain_str = "Gain x1/4"; break;
+         default: gain_str = "Unknown Gain"; break;
+     }
+
+     // Interpret integration time
+     const char* it_str;
+     switch (it_bits) {
+         case 0x0C: it_str = "25 ms"; break;
+         case 0x08: it_str = "50 ms"; break;
+         case 0x00: it_str = "100 ms"; break;
+         case 0x01: it_str = "200 ms"; break;
+         case 0x02: it_str = "400 ms"; break;
+         case 0x03: it_str = "800 ms"; break;
+         default: it_str = "Unknown IT"; break;
+     }
+
+     LOG_INFO("Gain setting: %s\n", gain_str);
+     LOG_INFO("Integration time: %s\n", it_str);
+
+}
+
+
 
 
 /* Read data (light level) from the veml6030 sensor */
@@ -114,12 +177,13 @@ void veml6030_read_data(void) {
 void veml6030_conversion(void)
 {
   // Convert the 16-bit raw data to lux
-        light_data = read_lux[0]  | ( read_lux[1]<< 8); //lsb first
-        LOG_INFO("Raw ALS value: %d\n", light_data);
+        light_data = (uint16_t)read_lux[0]  | ( (uint16_t)read_lux[1]<< 8); //lsb first
+        LOG_INFO("Raw ALS value: %u\n", light_data);
         float lux =  0.4608 * light_data;
 
         LOG_INFO("Light level: %.2f lux\n", lux);
 }
+
 /* I2C interrupt handler */
 /*void veml6030_I2C_IRQHandler(void) {
   I2C_TransferReturn_TypeDef transferStatus;
