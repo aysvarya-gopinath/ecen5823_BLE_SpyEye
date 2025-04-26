@@ -52,7 +52,7 @@
 #include"sl_bt_api.h"
 #include "src/ble.h"
 #include "em_gpio.h"
-#include "src/opt3001.h"
+#include "src/veml6030.h"
 // *************************************************
 // Students: It is OK to modify this file.
 //           Make edits appropriate for each
@@ -196,6 +196,7 @@ SL_WEAK void app_init(void)
 #else
 #endif
   oscillator_config (); // initialize the oscillator
+  i2c_init (); //initialize i2c
   NVIC_ClearPendingIRQ (LETIMER0_IRQn);  //clear pendings
   NVIC_EnableIRQ (LETIMER0_IRQn); // config NVIC to take IRQs from LETIMER0
   initLETIMER0 (); //initialize the letimer0
@@ -203,9 +204,7 @@ SL_WEAK void app_init(void)
   NVIC_EnableIRQ(GPIO_EVEN_IRQn); //enabling the GPIO interrupt for push button0
   NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
    NVIC_EnableIRQ(GPIO_ODD_IRQn); //enabling the GPIO interrupt for push button1
-  i2c_init (); //initialize i2c
-  delayApprox(100);
-  opt3001_init(); //initilaise the i2c for light sensor
+  veml6030_init(); //initilaise the i2c for light sensor
 } // app_init()
 
 
@@ -226,14 +225,14 @@ SL_WEAK void app_process_action(void)
   //         We will create/use a scheme that is far more energy efficient in
   //         later assignments.
 
-  // Read data from the sensor
-     opt3001_read_data();
+        //i2c_scan_bus();
 
-     // Convert and print lux value
-     opt3001_conversion();
-
-     // Delay or wait
-     delayApprox(1000);
+     delayApprox(100);
+      veml6030_read_data();
+           // Convert and print lux value
+           veml6030_conversion();
+           // Delay or wait
+           delayApprox(100);;
 
  } // app_process_action()
 
