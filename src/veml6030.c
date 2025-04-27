@@ -70,9 +70,19 @@ void veml6030_write_register(uint8_t reg, uint16_t value) {
       LOG_INFO("i2c write complete");
 }
 
+//Power up the sensor
+void veml6030_powerON(void)
+{
+  //power on the sensor with power save mode for continuous measurement
+  veml6030_write_register(VEML6030_REG_CONFIG, POWER_UP);
+  veml6030_write_register(VEML6030_REG_POWER,POWER_MODE);
+  LOG_INFO("ambient light sensor powering up");
+
+}
+
 /* Initialize I2C for veml6030 sensor */
 void veml6030_init(void) {
-  // Configure veml6030 to continuous conversion mode
+  // Configure veml6030 for  .125 gain and 100ms integration time
   veml6030_write_register(VEML6030_REG_CONFIG,CONFIG_CODE);
   LOG_INFO("ambient light sensor initialized");
 }
@@ -85,9 +95,9 @@ void config_read(void)
   uint8_t reg_address = VEML6030_REG_CONFIG;
   uint8_t config_data[2];
   I2C_TransferReturn_TypeDef transferStatus;
-
+  LOG_INFO("i2c config read started");
   // Write the register address
-  transferSequence.addr = VEML6030_I2C_ADDR << 1;
+ transferSequence.addr = VEML6030_I2C_ADDR << 1;
   transferSequence.flags = I2C_FLAG_WRITE;
   transferSequence.buf[0].data = &reg_address;
   transferSequence.buf[0].len = 1;
@@ -107,6 +117,18 @@ void config_read(void)
       LOG_ERROR("I2C read failed with status %d\n", transferStatus);
 
 
+
+  /*
+    transferSequence.addr = VEML6030_I2C_ADDR << 1;
+    transferSequence.flags = I2C_FLAG_WRITE_READ;
+    transferSequence.buf[0].data = &reg_address;
+    transferSequence.buf[0].len = 1;
+    transferSequence.buf[1].data = config_data;
+    transferSequence.buf[1].len = 2;
+    transferStatus = I2CSPM_Transfer(I2C0, &transferSequence);
+    if (transferStatus != i2cTransferDone)
+        LOG_ERROR("I2C read failed with status %d\n", transferStatus);
+*/
   // Combine LSB and MSB
   uint16_t config_value = config_data[0] | (config_data[1] << 8);
   uint8_t gain_bits = (config_value >> 11) & 0x03;
@@ -141,8 +163,25 @@ void config_read(void)
 
 
 
+/*void veml6030_read_data(void) {
+  I2C_TransferReturn_TypeDef transferStatus;
+   uint8_t reg_address = VEML6030_REG_RESULT; // Register address for light result data
+   LOG_INFO("i2c read started");
 
-/* Read data (light level) from the veml6030 sensor */
+    transferSequence.addr = VEML6030_I2C_ADDR << 1;
+    transferSequence.flags = I2C_FLAG_WRITE_READ;
+    transferSequence.buf[0].data = &reg_address;
+    transferSequence.buf[0].len = 1;
+    transferSequence.buf[1].data = read_lux;
+    transferSequence.buf[1].len = 2;
+    transferStatus = I2CSPM_Transfer(I2C0, &transferSequence);
+    if (transferStatus != i2cTransferDone)
+        LOG_ERROR("I2C read failed with status %d\n", transferStatus);
+}
+
+*/
+
+// Read data (light level) from the veml6030 sensor
 void veml6030_read_data(void) {
   I2C_TransferReturn_TypeDef transferStatus;
   uint8_t reg_address = VEML6030_REG_RESULT; // Register address for light result data
@@ -163,7 +202,7 @@ void veml6030_read_data(void) {
    transferSequence.addr = VEML6030_I2C_ADDR << 1;  // Address for read
   transferSequence.flags = I2C_FLAG_READ; // Change to read
   transferSequence.buf[0].data = read_lux; // Buffer for the read data
-  transferSequence.buf[0].len = sizeof(read_lux); // Length of the data to read
+  transferSequence.buf[0].len = 2; // Length of the data to read
   // Perform the I2C read transfer
   transferStatus = I2CSPM_Transfer ( I2C0, &transferSequence);
   if (transferStatus != i2cTransferDone)
@@ -173,6 +212,7 @@ void veml6030_read_data(void) {
 
  }
 
+
 //convert the raw data to value
 void veml6030_conversion(void)
 {
@@ -180,8 +220,16 @@ void veml6030_conversion(void)
         light_data = (uint16_t)read_lux[0]  | ( (uint16_t)read_lux[1]<< 8); //lsb first
         LOG_INFO("Raw ALS value: %u\n", light_data);
         float lux =  0.4608 * light_data;
+        LOG_INFO("Uncorrected Lux: %.2f lux\n", lux);
 
-        LOG_INFO("Light level: %.2f lux\n", lux);
+            // Apply non-linearity correction if lux > 1000
+            if (lux > 1000.0) {
+                float corrected_lux = (6.0135e-13 * pow(lux, 4)) -
+                                      (9.3924e-9  * pow(lux, 3)) +
+                                      (8.1488e-5  * pow(lux, 2)) +
+                                      (1.0023     * lux);
+                printf("Corrected  Light level Lux: %.2f lx\n", corrected_lux);
+            }
 }
 
 /* I2C interrupt handler */

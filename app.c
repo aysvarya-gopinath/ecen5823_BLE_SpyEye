@@ -204,7 +204,6 @@ SL_WEAK void app_init(void)
   NVIC_EnableIRQ(GPIO_EVEN_IRQn); //enabling the GPIO interrupt for push button0
   NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
    NVIC_EnableIRQ(GPIO_ODD_IRQn); //enabling the GPIO interrupt for push button1
-  veml6030_init(); //initilaise the i2c for light sensor
 } // app_init()
 
 
@@ -226,13 +225,16 @@ SL_WEAK void app_process_action(void)
   //         later assignments.
 
         //i2c_scan_bus();
+  veml6030_powerON();
+  timerWaitUs_polled(4000); //4ms delay
+  veml6030_init(); //initilaise the i2c for light sensor
+ timerWaitUs_polled(100000);  //100ms delay before 1st read
       config_read();
-     delayApprox(100);
       veml6030_read_data();
            // Convert and print lux value
            veml6030_conversion();
-           // Delay or wait
-           delayApprox(100);;
+           // Delay
+           //delayApprox(1000);
 
  } // app_process_action()
 
