@@ -96,29 +96,7 @@ void config_read(void)
   uint8_t config_data[2];
   I2C_TransferReturn_TypeDef transferStatus;
   LOG_INFO("i2c config read started");
-  // Write the register address
- transferSequence.addr = VEML6030_I2C_ADDR << 1;
-  transferSequence.flags = I2C_FLAG_WRITE;
-  transferSequence.buf[0].data = &reg_address;
-  transferSequence.buf[0].len = 1;
 
-  transferStatus = I2CSPM_Transfer(I2C0, &transferSequence);
-  if (transferStatus != i2cTransferDone)
-      LOG_ERROR("I2C write failed with status %d\n", transferStatus);
-
-  // Read 2 bytes from the configuration register
-  transferSequence.addr = VEML6030_I2C_ADDR << 1;
-  transferSequence.flags = I2C_FLAG_READ;
-  transferSequence.buf[0].data = config_data;
-  transferSequence.buf[0].len = 2;
-
-  transferStatus = I2CSPM_Transfer(I2C0, &transferSequence);
-  if (transferStatus != i2cTransferDone)
-      LOG_ERROR("I2C read failed with status %d\n", transferStatus);
-
-
-
-  /*
     transferSequence.addr = VEML6030_I2C_ADDR << 1;
     transferSequence.flags = I2C_FLAG_WRITE_READ;
     transferSequence.buf[0].data = &reg_address;
@@ -128,7 +106,7 @@ void config_read(void)
     transferStatus = I2CSPM_Transfer(I2C0, &transferSequence);
     if (transferStatus != i2cTransferDone)
         LOG_ERROR("I2C read failed with status %d\n", transferStatus);
-*/
+
   // Combine LSB and MSB
   uint16_t config_value = config_data[0] | (config_data[1] << 8);
   uint8_t gain_bits = (config_value >> 11) & 0x03;
@@ -163,7 +141,7 @@ void config_read(void)
 
 
 
-/*void veml6030_read_data(void) {
+void veml6030_read_data(void) {
   I2C_TransferReturn_TypeDef transferStatus;
    uint8_t reg_address = VEML6030_REG_RESULT; // Register address for light result data
    LOG_INFO("i2c read started");
@@ -177,40 +155,9 @@ void config_read(void)
     transferStatus = I2CSPM_Transfer(I2C0, &transferSequence);
     if (transferStatus != i2cTransferDone)
         LOG_ERROR("I2C read failed with status %d\n", transferStatus);
+    else
+          LOG_INFO("i2c read complete");
 }
-
-*/
-
-// Read data (light level) from the veml6030 sensor
-void veml6030_read_data(void) {
-  I2C_TransferReturn_TypeDef transferStatus;
-  uint8_t reg_address = VEML6030_REG_RESULT; // Register address for light result data
-  LOG_INFO("i2c read started");
-  //  Write the register address (only 1 byte)
-  transferSequence.addr = VEML6030_I2C_ADDR << 1;  // Address for write
-  transferSequence.flags = I2C_FLAG_WRITE;
-  transferSequence.buf[0].data = &reg_address;
-  transferSequence.buf[0].len = 1; // Only 1 byte for register address
-  // Perform the I2C transfer for register address
-  transferStatus = I2CSPM_Transfer ( I2C0, &transferSequence);
-   if (transferStatus != i2cTransferDone)
-       LOG_ERROR("\n\r I2C parial write failed with %d status\n",  transferStatus);
-   else
-       LOG_INFO("i2c partial write complete");
-
-  //  Read the data (light level) from the register
-   transferSequence.addr = VEML6030_I2C_ADDR << 1;  // Address for read
-  transferSequence.flags = I2C_FLAG_READ; // Change to read
-  transferSequence.buf[0].data = read_lux; // Buffer for the read data
-  transferSequence.buf[0].len = 2; // Length of the data to read
-  // Perform the I2C read transfer
-  transferStatus = I2CSPM_Transfer ( I2C0, &transferSequence);
-  if (transferStatus != i2cTransferDone)
-      LOG_ERROR("\n\r I2C read failed with %d status\n",  transferStatus);
-  else
-      LOG_INFO("i2c read complete");
-
- }
 
 
 //convert the raw data to value
@@ -218,8 +165,7 @@ void veml6030_conversion(void)
 {
   // Convert the 16-bit raw data to lux
         light_data = (uint16_t)read_lux[0]  | ( (uint16_t)read_lux[1]<< 8); //lsb first
-        LOG_INFO("Raw ALS value: %u\n", light_data);
-        float lux =  0.4608 * light_data;
+        float lux = 0.0576* light_data;
         LOG_INFO("Uncorrected Lux: %.2f lux\n", lux);
 
             // Apply non-linearity correction if lux > 1000

@@ -228,7 +228,7 @@ SL_WEAK void app_process_action(void)
   veml6030_powerON();
   timerWaitUs_polled(4000); //4ms delay
   veml6030_init(); //initilaise the i2c for light sensor
- timerWaitUs_polled(100000);  //100ms delay before 1st read
+timerWaitUs_polled(100000);  //100ms delay before 1st read
       config_read();
       veml6030_read_data();
            // Convert and print lux value
