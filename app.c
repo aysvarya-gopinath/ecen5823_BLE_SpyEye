@@ -233,9 +233,6 @@ timerWaitUs_polled(100000);  //100ms delay before 1st read
       veml6030_read_data();
            // Convert and print lux value
            veml6030_conversion();
-           // Delay
-           //delayApprox(1000);
-
  } // app_process_action()
 
 
