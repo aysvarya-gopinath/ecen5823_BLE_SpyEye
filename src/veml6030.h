@@ -20,9 +20,16 @@
 #define VEML6030_REG_CONFIG    (0x00)  // command code configuration register address
 #define VEML6030_REG_RESULT  (0x04)   //command code for data output register
 #define VEML6030_REG_POWER    (0x03)  // command code for power saving mode register
-#define CONFIG_CODE (0x1800)  //(0x1000)
+#define VEML6030_REG_HIGH    (0x01)  // command code for high threshold register
+#define VEML6030_REG_LOW    (0x02)  // command code for low threshold register
+#define VEML6030_REG_INTERRUPT   (0x06)  // command code for interrupt read register
+
+
+#define CONFIG_CODE (0001100011000000)//  // gain is 1x; 100ms integration time
 #define POWER_UP (0x00) //power on
-#define POWER_MODE (0x07) // power mode 4 and power save enabled
+#define POWER_MODE (0111) // power mode 4 and power save enabled
+#define LOW_THRESHOLD (0x1458)//1010001011000 for 300lux
+#define HIGH_THRESHOLD (0xA98B)//for lux above 2500lux
 
 void veml6030_init(void);
 void veml6030_read_data(void);
@@ -33,4 +40,6 @@ void i2c_scan_bus(void);
 void config_read(void);
 void veml6030_powerON(void);
 void veml6030_powerMode(void);
+void veml6030_low_threshold(void);
+void veml6030_high_threshold(void);
 #endif // VEML6030_H

@@ -105,6 +105,17 @@ void schedulerSetEvent_PB1_release()
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
+/*Scheduler routine to set an scheduler event based on external ambient light sensor interrupt
+ * No return types and parameters
+ */
+void schedulerSetEvent_Ext_interrupt()
+{
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL(); //enter critical section
+  sl_bt_external_signal (EXT_INTERRUPT); //signal the Bluetooth stack that an (external interrupt)from ambient light sensor
+  CORE_EXIT_CRITICAL(); // exit critical section
+}
+
 /*State machine to read ambient light from the external VEML6030 sensor via I2C
  * An EVENT set by the interrupts is passed as a parameter
  * No return type
@@ -169,27 +180,39 @@ void VEML6030_state_machine(sl_bt_msg_t *evt)
                   nextState = ReadWait;
                 }
               break;
-
+/*
             case ReadWait:
                         nextState = ReadWait;
                         if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
                           {
-                            sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1);
-                            timerWaitUs_irq(100000);  //100ms delay before 1st read
-                            nextState = SensorWait;
+                            veml6030_high_threshold(); //set high threshold
+                            nextState = ReadWaiting;
                           }
                         break;
+
+            case ReadWaiting:
+                                 nextState = ReadWaiting;
+                                 if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
+                                   {
+                                     veml6030_low_threshold();//set low threshold
+                                     nextState = SensorWait;
+                                   }
+                                 break;
+
+
             case SensorWait:
               nextState = SensorWait;
-              if (eventValue && IRQ_WAIT_OVER)
+              if (eventValue && I2C_COMPLETE)
                 {
-                  sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1);
-                  config_read();
+                  if  (eventValue && EXT_INTERRUPT) //only if the interrupt is set
+                      config_read();          //read the config value
                   nextState = I2Cread;
                 }
               break;
-            case I2Cread:
-              nextState = I2Cread; //i2c reading temperature data
+
+      */
+            case ReadWait:
+              nextState = ReadWait; //i2c reading temperature data
               if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
                 {
                   veml6030_read_data();

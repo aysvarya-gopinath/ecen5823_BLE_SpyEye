@@ -68,7 +68,13 @@ void GPIO_EVEN_IRQHandler()
         schedulerSetEvent_PB0_press();
        else if ((GPIO_PinInGet(PB_port, PB0_pin) == 1))
          schedulerSetEvent_PB0_release();
-
+    }
+  if(flags &(1 << interrupt_pin) ) //if external gpio interrupt is set
+     {
+      if (GPIO_PinInGet(PA_port, interrupt_pin) == 0)  // If the interrupt pin is low (0V)
+        {
+           schedulerSetEvent_Ext_interrupt(); // Handle the interrupt
+        }
     }
   CORE_EXIT_CRITICAL(); //exiting critical sections
 

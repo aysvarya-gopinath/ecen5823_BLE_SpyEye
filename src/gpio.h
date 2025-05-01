@@ -51,7 +51,7 @@ gpio.h
 
 //expansion pin 3
 #define PA_port (gpioPortA)
-#define PIR_sensor_pin (2) //PA2
+#define interrupt_pin (2) //PA2
 
 
 // Function prototypes

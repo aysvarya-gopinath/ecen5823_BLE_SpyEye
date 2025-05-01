@@ -19,6 +19,7 @@
 #define PB0_release (0x10)  // External push button 0 release
 #define PB1_press   (0x20)  // External push button 1 press
 #define PB1_release (0x40)  // External push button 1 release
+#define EXT_INTERRUPT (0x80) //external gpio interrupt from ambinet light sensor
 
 //state variables of the temperature state machine
 typedef enum uint32_t {
@@ -27,6 +28,7 @@ typedef enum uint32_t {
   WaitMode,
   I2Cwrite,   //i2c write occurs
   ReadWait,
+  ReadWaiting,
   SensorWait,  // sensor waits
   I2Cread,   //i2c read has occurs
  SensorOFF,  //sensor is turned off
@@ -78,6 +80,9 @@ void schedulerSetEvent_PB0_press();
 //set an external push button 1 event for press and release
 void schedulerSetEvent_PB1_press();
 void schedulerSetEvent_PB1_release();
+
+//set an external ambinet light sensor event
+void schedulerSetEvent_Ext_interrupt();
 
 //state machine for the temperature read
 void VEML6030_state_machine(sl_bt_msg_t *evt);
