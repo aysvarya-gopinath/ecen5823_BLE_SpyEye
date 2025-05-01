@@ -16,6 +16,7 @@
 #include"ble.h"
 #include"lcd.h"
 #include "ble_device_type.h"
+#include "veml6030.h"
 // Include logging specifically for this .c file
 #define INCLUDE_LOG_DEBUG 0
 #include "src/log.h"
@@ -104,13 +105,25 @@ void schedulerSetEvent_PB1_release()
   CORE_EXIT_CRITICAL(); // exit critical section
 }
 
-/*State machine to read temperature from Si7021 sensor via I2C
+/*State machine to read ambient light from the external VEML6030 sensor via I2C
  * An EVENT set by the interrupts is passed as a parameter
  * No return type
  */
+
+
+//veml6030_powerON();
+//timerWaitUs_irq(4000); //4ms delay
+//veml6030_init(); //initilaise the i2c for light sensor
+//timerWaitUs_irq(100000);  //100ms delay before 1st read
+//    config_read();
+//    veml6030_read_data();
+//         // Convert and print lux value
+//         veml6030_conversion();
+
+
                    /*****************************SERVER******************************/
 #if DEVICE_IS_BLE_SERVER
-void Si7021_state_machine(sl_bt_msg_t *evt)
+void VEML6030_state_machine(sl_bt_msg_t *evt)
 {
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_system_external_signal_id) //external signals event is set
         {
@@ -124,44 +137,72 @@ void Si7021_state_machine(sl_bt_msg_t *evt)
               nextState = Idle; // initial idle state
               if (eventValue && UF_LETIMER) //if 3s UF interrupt
                 {
-                  gpioSi7021ON (); //power on the sensor
-                  timerWaitUs_irq (80000); //power up sequence delay
-                  nextState = I2Cwrite;
+                  sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1);
+                  veml6030_powerON(); //power on the sensor
+                  nextState = PowerMode;
                 }
               break;
+            case PowerMode:
+                         nextState = PowerMode;
+                         if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
+                           {
+                             veml6030_powerMode(); //set the low power mode
+                             nextState = WaitMode;
+                           }
+                         break;
+            case WaitMode:
+                                   nextState = WaitMode;
+                                   if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
+                                     {
+                                       sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1);
+                                       timerWaitUs_irq(4000); //4ms delay
+                                       nextState = I2Cwrite;
+                                     }
+                                   break;
+
             case I2Cwrite:
               nextState = I2Cwrite;
               if (eventValue && IRQ_WAIT_OVER) //non-blocking irq wait generates a COMP1 interrupt when expired
                 {
-                  sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1); //add power requirement for EM1
-                  send_I2C_command (); //write i2c command
-                  nextState = SensorWait;
+                  sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1);
+                  veml6030_init(); //initilaise the i2c for light sensor
+                  nextState = ReadWait;
                 }
               break;
+
+            case ReadWait:
+                        nextState = ReadWait;
+                        if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
+                          {
+                            sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1);
+                            timerWaitUs_irq(100000);  //100ms delay before 1st read
+                            nextState = SensorWait;
+                          }
+                        break;
             case SensorWait:
               nextState = SensorWait;
-              if (eventValue && I2C_COMPLETE) //i2c write command is completed
+              if (eventValue && IRQ_WAIT_OVER)
                 {
-                  sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1); //Remove Power Req of EM1
-                  timerWaitUs_irq (10800); //conversion delay
+                  sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1);
+                  config_read();
                   nextState = I2Cread;
                 }
               break;
             case I2Cread:
               nextState = I2Cread; //i2c reading temperature data
-              if (eventValue && IRQ_WAIT_OVER) //non-blocking irq wait generates a COMP1 interrupt when expired
+              if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
                 {
-                  sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1); //add power requirement for EM1
-                  read_temp_data (); //i2c read temperature
+                  veml6030_read_data();
                   nextState = SensorOFF;
                 }
               break;
+
             case SensorOFF:
               nextState = SensorOFF;
               if (eventValue && I2C_COMPLETE) //i2c read command is completed
                 {
                   sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1); //Remove Power Req of EM1
-                  log_temperature (); //log the temperature
+                  veml6030_conversion();
                   nextState = Idle;
                 }
               break;

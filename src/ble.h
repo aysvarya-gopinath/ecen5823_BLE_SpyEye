@@ -104,7 +104,7 @@ ble_data_struct_t* get_ble_dataPtr(void);
 void handle_ble_event(sl_bt_msg_t *evt);
 
 //function to send the temperature to the gatt db and app
-void send_temp_ble(int32_t temp_deg);
+void send_temp_ble( uint8_t message);
 
 #endif /* SRC_BLE_H_ */
 

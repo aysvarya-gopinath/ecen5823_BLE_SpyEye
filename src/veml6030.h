@@ -32,4 +32,5 @@ void veml6030_write_register(uint8_t reg, uint16_t value);
 void i2c_scan_bus(void);
 void config_read(void);
 void veml6030_powerON(void);
+void veml6030_powerMode(void);
 #endif // VEML6030_H

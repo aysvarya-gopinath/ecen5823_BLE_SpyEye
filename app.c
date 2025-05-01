@@ -207,32 +207,13 @@ SL_WEAK void app_init(void)
 } // app_init()
 
 
-
-
-
-
-
-
 /**************************************************************************//**
  * Application Process Action.
  *****************************************************************************/
 SL_WEAK void app_process_action(void)
 {
-  // Put your application code here for A1 to A4.
-  // This is called repeatedly from the main while(1) loop
-  // Notice: This function is not passed or has access to Bluetooth stack events.
-  //         We will create/use a scheme that is far more energy efficient in
-  //         later assignments.
+         //i2c_scan_bus();
 
-        //i2c_scan_bus();
-  veml6030_powerON();
-  timerWaitUs_polled(4000); //4ms delay
-  veml6030_init(); //initilaise the i2c for light sensor
-timerWaitUs_polled(100000);  //100ms delay before 1st read
-      config_read();
-      veml6030_read_data();
-           // Convert and print lux value
-           veml6030_conversion();
  } // app_process_action()
 
 
@@ -251,20 +232,12 @@ timerWaitUs_polled(100000);  //100ms delay before 1st read
  *****************************************************************************/
 void sl_bt_on_event(sl_bt_msg_t *evt)
 {
-
-  // Just a trick to hide a compiler warning about unused input parameter evt.
-  //(void) evt;
-
-  // For A5 onward:
-  // Some events require responses from our application code,
-  // and don’t necessarily advance our state machines.
-  // For A5 uncomment the next 2 function calls
-  // handle_ble_event(evt); //event responder
+   handle_ble_event(evt); //event responder
 
 #if DEVICE_IS_BLE_SERVER
-// SERVER
+// SERVER4
 // sequence through states driven by events
-   //Si7021_state_machine(evt);
+   VEML6030_state_machine(evt);
 #else
 //CLIENT
 // sequence through service and characteristic discovery

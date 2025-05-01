@@ -23,7 +23,10 @@
 //state variables of the temperature state machine
 typedef enum uint32_t {
   Idle,     //idle state
+  PowerMode,
+  WaitMode,
   I2Cwrite,   //i2c write occurs
+  ReadWait,
   SensorWait,  // sensor waits
   I2Cread,   //i2c read has occurs
  SensorOFF,  //sensor is turned off
@@ -77,7 +80,7 @@ void schedulerSetEvent_PB1_press();
 void schedulerSetEvent_PB1_release();
 
 //state machine for the temperature read
-void Si7021_state_machine(sl_bt_msg_t *evt);
+void VEML6030_state_machine(sl_bt_msg_t *evt);
 
 //get the events set by the handler
 uint32_t getNextEvent(void);

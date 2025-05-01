@@ -24,6 +24,7 @@ extern const sli_bt_gattdb_t gattdb;
 #define gattdb_measurement_interval           29
 #define gattdb_valid_range                    30
 #define gattdb_button_state                   33
+#define gattdb_alert_message                  37
 
 
 #endif // __GATT_DB_H

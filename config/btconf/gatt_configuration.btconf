@@ -160,4 +160,25 @@ When used with the Measurement Interval characteristic, the Valid Range descript
       </descriptor>
     </characteristic>
   </service>
+
+  <!--Intruder Alert service-->
+  <service advertise="true" name="Intruder Alert service" requirement="mandatory" sourceId="" type="primary" uuid="7248a06a-5b1e-48ad-a882-1f61cbb8519f">
+
+    <!--Intruder Alert message -->
+    <characteristic const="false" id="alert_message" name="Intruder Alert message " sourceId="" uuid="7422307e-ab67-409e-a643-2721dc061835">
+      <value length="1" type="hex" variable_length="false">00</value>
+      <properties>
+        <indicate authenticated="false" bonded="false" encrypted="false"/>
+      </properties>
+
+      <!--Custom Descriptor-->
+      <descriptor const="false" discoverable="true" id="custom_descriptor" name="Custom Descriptor" sourceId="" uuid="2902">
+        <properties>
+          <read authenticated="false" bonded="false" encrypted="false"/>
+          <write authenticated="false" bonded="false" encrypted="false"/>
+        </properties>
+        <value length="2" type="hex" variable_length="false">00</value>
+      </descriptor>
+    </characteristic>
+  </service>
 </gatt>

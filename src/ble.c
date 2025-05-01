@@ -9,7 +9,7 @@
 #include "sl_bt_api.h"
 #include "gatt_db.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 0 //
+#define INCLUDE_LOG_DEBUG 1 //
 #include "src/log.h"
 #include"math.h"
 #include "lcd.h"
@@ -27,7 +27,7 @@ bool empty_flag=false; // flags to indicate full and empty queue
 bool isEmpty = false, isFull=false; //holds return types
 ble_data_struct_t ble_data; // BLE private data
 bd_addr bt_address = SERVER_BT_ADDRESS;
-
+bool intruder_alert_active=true;
 //    cbfifo variables
 uint16_t     charHandle;
 uint32_t     bufLength;
@@ -155,23 +155,17 @@ return 0;
  * raw temperature is the  parameters
  */
 #if DEVICE_IS_BLE_SERVER
-void send_temp_ble(int32_t temp_deg){
+void send_temp_ble(uint8_t message){
   sl_status_t sc;
-  uint8_t htm_temperature_buffer[5]; //buffer to hold temperature
-  uint8_t *p = htm_temperature_buffer;
-  uint32_t htm_temperature_flt;
-  uint8_t flags = 0x00;
-  UINT8_TO_BITSTREAM(p, flags); // insert the flags byte
-  htm_temperature_flt = INT32_TO_FLOAT(temp_deg*1000, -3);
-  UINT32_TO_BITSTREAM(p, htm_temperature_flt); // insert the temperature measurement
-
+ // uint8_t length = strlen(message);
 //write temperature to gatt db
   sc = sl_bt_gatt_server_write_attribute_value (
-  gattdb_temperature_measurement, // handle from gatt_db.h
+      gattdb_alert_message, // handle from gatt_db.h
       0,             // offset
-      5,            // length
-      htm_temperature_buffer      // in IEEE-11073 format
+      1,            // length
+      &message     // in IEEE-11073 format
       );
+
   if (sc != SL_STATUS_OK)
     LOG_ERROR("\n\r sl_bt_gatt_server_write_attribute_value() returned != 0 status=0x%04x\n", (unsigned int) sc);
 
@@ -179,11 +173,13 @@ void send_temp_ble(int32_t temp_deg){
     {
       if (ble_data.inflight_indication == false && (get_queue_depth () == 0)) //if not inflight and queue is empty
         {
-          displayPrintf (DISPLAY_ROW_TEMPVALUE, "Temperature=%u", temp_deg); //display the temperature on screen
+        //  displayPrintf (DISPLAY_ROW_TEMPVALUE, "Temperature=%u", temp_deg); //display the temperature on screen
           //send indication with temperature
+
           sc = sl_bt_gatt_server_send_indication (ble_data.connectionHandle,
-          gattdb_temperature_measurement, // handle from gatt_db.h
-           5, htm_temperature_buffer // in IEEE-11073 format
+                                                  gattdb_alert_message, // handle from gatt_db.h
+                                                  1,
+                                                  &message // in IEEE-11073 format
             );
           if (sc != SL_STATUS_OK)
               LOG_ERROR("\n\r sl_bt_gatt_server_send_indication() for temp returned != 0 status=0x%04x\n", (unsigned int) sc);
@@ -191,7 +187,7 @@ void send_temp_ble(int32_t temp_deg){
               ble_data.inflight_indication = INFLIGHT; //mark as in transit
         }
       else           //if queue is not empty and inflight
-          write_queue (gattdb_temperature_measurement, 5,htm_temperature_buffer);
+          write_queue ( gattdb_alert_message, 5,(uint8_t*)&message);
 }
 }
 
@@ -351,7 +347,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
           {
             LOG_ERROR("\n\r sl_bt_legacy_advertiser_start() returned != 0 status=0x%04x\n",(unsigned int) sc);
           }
-
+        LOG_INFO("\n\rAdvertising \n");
         displayPrintf (DISPLAY_ROW_NAME, BLE_DEVICE_TYPE_STRING); // prints Server on display
         displayPrintf (DISPLAY_ROW_CONNECTION, "Advertising");
         displayPrintf (DISPLAY_ROW_9, "Button Released"); //display button state at all times
@@ -389,6 +385,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
 /////////////////////////////////////CONNECTION OPENED/////////////////////////////////////////////////////////
     case sl_bt_evt_connection_opened_id:  //new connection has opened
       {
+         LOG_INFO("\n\r Connected \n");
         displayPrintf (DISPLAY_ROW_CONNECTION, "Connected");
         ble_data.connectionHandle = evt->data.evt_connection_opened.connection; //connection handle
 
@@ -428,6 +425,22 @@ void handle_ble_event (sl_bt_msg_t *evt)
         displayUpdate ();  //refresh the lcd to prevent charge buildup
         break;
       }
+
+
+      ///////////////////////////////////////CLIENT WRITE WITHOUT ACK////////////////////////////////////////////////////////
+    case sl_bt_evt_gatt_server_attribute_value_id:
+    {
+        uint16_t handle = evt->data.evt_gatt_server_attribute_value.attribute;
+        const uint8_t *value = evt->data.evt_gatt_server_attribute_value.value.data;
+        size_t len = evt->data.evt_gatt_server_attribute_value.value.len;
+
+        if (handle == gattdb_alert_message && len == 1 && value[0] == '1') {
+            LOG_INFO("Client requested to ignore further alerts.\n");
+            intruder_alert_active = false;
+        }
+    }
+    break;
+
 
 ////////////////////////////////////////CONNECTION CLOSED//////////////////////////////////////////////////////////
     case sl_bt_evt_connection_closed_id: //connection has closed
@@ -510,7 +523,7 @@ void handle_ble_event (sl_bt_msg_t *evt)
       {
         /*----------------------------- TEMPERATURE MEASUREMENT-------------------------*/
         if (evt->data.evt_gatt_server_characteristic_status.characteristic
-            == gattdb_temperature_measurement)
+            == gattdb_alert_message)
           {
             if (evt->data.evt_gatt_server_characteristic_status.status_flags
                 == sl_bt_gatt_server_client_config)
