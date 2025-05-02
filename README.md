@@ -1,4 +1,3 @@
-# ecen5823-s25-assignments
-Starter code based on Gecko SDK 4.3.2 and GNU ARM v10.2.1
-
-You must have Gecko SDK Version 4.3.2 and GNU ARM v10.2.1 to compile successfully without warnings and errors.
+# BLE Spy EYE- MOTION SURVEILLANCE SYSTEM
+##DEMO VIDEO 
+https://drive.google.com/file/d/1t8ZS69c9VW5KA71XxzYDPmFukNBGeDCP/view?usp=sharing
