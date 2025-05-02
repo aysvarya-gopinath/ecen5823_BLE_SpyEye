@@ -21,14 +21,6 @@
 //initialize i2c
 void i2c_init(void);
 
-//write command via i2c
-void send_I2C_command (void);
-//read temperature via i2c
-void read_temp_data(void);
-
-//log the read temperature values
-void log_temperature(void);
-
 //i2c interrupt handler
 void I2C0_IRQHandler(void);
 #endif /* SRC_I2C_H_ */

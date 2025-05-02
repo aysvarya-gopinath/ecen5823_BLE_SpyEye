@@ -23,41 +23,14 @@
 
 //state variables of the temperature state machine
 typedef enum uint32_t {
-  Idle,     //idle state
+  Idle,
   PowerMode,
   WaitMode,
-  I2Cwrite,   //i2c write occurs
-  ReadWait,
-  ReadWaiting,
-  SensorWait,  // sensor waits
-  I2Cread,   //i2c read has occurs
- SensorOFF,  //sensor is turned off
+  SensorInit,
+  SensorRead,
+  SensorOFF,
+  ConversionMode,
   } State_t;
-
-  //state variables of the discovery state machine
-  typedef enum uint16_t{
-    THERMO_SERVICES_DISCOVER,   //discovered services by uuid for temperature
-    THERMO_CHARACTERITICS_DISCOVER,  // discovered characterictics by uuid
-    THERMO_INDICATIONS_ENABLE,   //gatt characteristics notifications enabled
-    PB_SERVICES_DISCOVER,   //discovered services by uuid for push button
-    PB_CHARACTERITICS_DISCOVER,  // discovered characterictics by uuid
-    PB_INDICATIONS_ENABLE,   //gatt characteristics notifications enabled
-    WAIT_STATE,  //waiting for external event
-    CLOSED_STATE, //connection closed
-    } discoverState_t;
-
-#if !DEVICE_IS_BLE_SERVER
-// health thermometer service UUID
-    static const uint8_t thermo_service[2] ={ 0x09, 0x18 }; //in little endian
-// temperature Measurement characteristic UUID
-    static const uint8_t thermo_char[2] ={ 0x1c, 0x2a };
-
-    static const uint8_t pb_service[16] ={0x89, 0x62, 0x13, 0x2d, 0x2a, 0x65, 0xec, 0x87, 0x3e,
-                                  0x43, 0xc8, 0x38,0x01, 0x00, 0x00, 0x00};
-    static const uint8_t pb_char[16] ={0x89, 0x62, 0x13, 0x2d, 0x2a, 0x65, 0xec, 0x87, 0x3e, 0x43, 0xc8, 0x38,
-     0x02, 0x00, 0x00, 0x00};
-
-#endif
 
 
 /****************************************************************************
@@ -84,13 +57,11 @@ void schedulerSetEvent_PB1_release();
 //set an external ambinet light sensor event
 void schedulerSetEvent_Ext_interrupt();
 
-//state machine for the temperature read
+//state machine for the ambient light sensor
 void VEML6030_state_machine(sl_bt_msg_t *evt);
 
 //get the events set by the handler
 uint32_t getNextEvent(void);
 
-//discovery state machine
-void discovery_state_machine(sl_bt_msg_t *evt);
 
 #endif /* SRC_SCHEDULER_H_ */

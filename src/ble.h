@@ -47,14 +47,14 @@ uint8_t  advertisingSetHandle; //to store the handle
 uint8_t myAddressType; //identity address type
 bool connect_open; //flag to track if connection is opened(true) or closed(false)
 int inflight_indication; //indication status inflight (1) or not (0)(server sends indications to client)
-bool htm_indications; //true when htm indications are enabled (client enables/disables notifications/indications from server)
+bool motion_indications; //true when motion indications are enabled (client enables/disables notifications/indications from server)
 bool button_state_indication ; //flag to check if the indications for the button state is enabled
 int bonding_status; //indicates if device is bonded or not
 uint32_t connectionHandle; //connection handle
-uint32_t htmserviceHandle; //service handle for htm
-uint32_t htmcharacteristicsHandle; //characteristics handle for htm
+uint32_t motionserviceHandle; //service handle for motion
+uint32_t motioncharacteristicsHandle; //characteristics handle for motion
  uint32_t pbserviceHandle;//service handle for push button
- uint32_t pbcharacteristicsHandle;//characteristics handle for htm for push button
+ uint32_t pbcharacteristicsHandle;//characteristics handle for motion for push button
 } ble_data_struct_t;
 
 #define QUEUE_DEPTH      (16)
@@ -103,8 +103,8 @@ ble_data_struct_t* get_ble_dataPtr(void);
 //function to handle the BT stack events
 void handle_ble_event(sl_bt_msg_t *evt);
 
-//function to send the temperature to the gatt db and app
-void send_temp_ble( uint8_t message);
+//function to send the motion activity to the gatt db and app
+void send_motion_ble( uint8_t message);
 
 #endif /* SRC_BLE_H_ */
 

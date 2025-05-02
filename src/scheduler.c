@@ -24,8 +24,6 @@
 uint32_t myEvents = NO_EVENT, setEvent = NO_EVENT; //variables to set events
 
 
-
-
 /*Scheduler routine to set scheduler event based on the underflow interrupt
  * No return types and parameters
  */
@@ -121,19 +119,7 @@ void schedulerSetEvent_Ext_interrupt()
  * No return type
  */
 
-
-//veml6030_powerON();
-//timerWaitUs_irq(4000); //4ms delay
-//veml6030_init(); //initilaise the i2c for light sensor
-//timerWaitUs_irq(100000);  //100ms delay before 1st read
-//    config_read();
-//    veml6030_read_data();
-//         // Convert and print lux value
-//         veml6030_conversion();
-
-
                    /*****************************SERVER******************************/
-#if DEVICE_IS_BLE_SERVER
 void VEML6030_state_machine(sl_bt_msg_t *evt)
 {
       if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_system_external_signal_id) //external signals event is set
@@ -166,22 +152,22 @@ void VEML6030_state_machine(sl_bt_msg_t *evt)
                                    if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
                                      {
                                        sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1);
-                                       timerWaitUs_irq(4000); //4ms delay
-                                       nextState = I2Cwrite;
+                                       timerWaitUs_irq(4000); //4ms delay before read
+                                       nextState = SensorInit;
                                      }
                                    break;
 
-            case I2Cwrite:
-              nextState = I2Cwrite;
+            case SensorInit:
+              nextState =SensorInit;
               if (eventValue && IRQ_WAIT_OVER) //non-blocking irq wait generates a COMP1 interrupt when expired
                 {
                   sl_power_manager_add_em_requirement (SL_POWER_MANAGER_EM1);
                   veml6030_init(); //initilaise the i2c for light sensor
-                  nextState = ReadWait;
+                  nextState = SensorRead;
                 }
               break;
-/*
-            case ReadWait:
+/************ ATTEMPT TO CONFIGURE THE INTERRUPT FEATURE  ********************************/
+ /*           case ReadWait:
                         nextState = ReadWait;
                         if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
                           {
@@ -211,31 +197,31 @@ void VEML6030_state_machine(sl_bt_msg_t *evt)
               break;
 
 */
-            case ReadWait:
-              nextState = ReadWait; //i2c reading temperature data
+            case SensorRead:
+              nextState = SensorRead; //i2c reading temperature data
               if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
                 {
-                  veml6030_read_data();
-                  nextState = SensorWait;
+                  veml6030_read_data(); //read the sensor data
+                  nextState =SensorOFF;
                 }
               break;
 
 
-            case SensorWait:
-              nextState = SensorWait;
+            case SensorOFF:
+              nextState = SensorOFF;
               if (eventValue && I2C_COMPLETE)
                 {
-                  veml6030_write_register(VEML6030_REG_CONFIG,0x01); //turn off
+                  veml6030_powerOFF();//turn off
                   nextState = SensorOFF;
                 }
               break;
 
-            case SensorOFF:
-              nextState = SensorOFF;
+            case ConversionMode:
+              nextState = ConversionMode;
               if (eventValue && I2C_COMPLETE) //i2c read command is completed
                 {
                   sl_power_manager_remove_em_requirement (SL_POWER_MANAGER_EM1); //Remove Power Req of EM1
-                  veml6030_conversion();
+                  veml6030_conversion(); //convert raw data to lux
                   nextState = Idle;
                 }
               break;
@@ -247,127 +233,4 @@ void VEML6030_state_machine(sl_bt_msg_t *evt)
 
 } //state machine
 
-                 /*****************************CLIENT********************************/
-#else
-/*The discovery state machine performs the services and characteristics discovery operations
- *Event is passed as the parameter and no return types
- */
-void discovery_state_machine (sl_bt_msg_t *evt)
-{
-  sl_status_t sc;
-  ble_data_struct_t *ble_data_ptr = get_ble_dataPtr (); //pointer to the ble_data structure
-  static discoverState_t nextState = THERMO_SERVICES_DISCOVER;
-  discoverState_t current_state = nextState;
-  switch (current_state)
-    {
-
-////////////////////////////DISCOVER SERVICED BY UUID FOR TEMPERTURE ///////////////////////////////////////////
-    case THERMO_SERVICES_DISCOVER: //discover services by uuid
-      nextState = THERMO_SERVICES_DISCOVER;
-      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_connection_opened_id)
-        {
-          // discover primary services by UUID
-          sc = sl_bt_gatt_discover_primary_services_by_uuid ( ble_data_ptr->connectionHandle, sizeof(thermo_service),(uint8_t*) thermo_service);
-          if (sc != SL_STATUS_OK)
-             LOG_ERROR( "sl_bt_gatt_discover_primary_services_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
-          nextState = THERMO_CHARACTERITICS_DISCOVER;
-        }
-      break;
-////////////////////////////DISCOVER CHARACTERITICS BY UUID FOR TEMPERTURE ///////////////////////////////////////////
-    case THERMO_CHARACTERITICS_DISCOVER: // discover characterictics by uuid
-      nextState = THERMO_CHARACTERITICS_DISCOVER;
-      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
-        {
-          // discover  characteristics by specified UUID
-          sc = sl_bt_gatt_discover_characteristics_by_uuid (ble_data_ptr->connectionHandle,
-                                                            ble_data_ptr->htmserviceHandle,
-                                                            sizeof(thermo_char),
-                                                            (uint8_t*) thermo_char);
-          if (sc != SL_STATUS_OK)
-              LOG_ERROR( "sl_bt_gatt_discover_characteristics_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
-          nextState = THERMO_INDICATIONS_ENABLE;
-        }
-      break;
-////////////////////////////ENABLE NOTIFICATIONS FOR TEMPERTURE ///////////////////////////////////////////
-    case THERMO_INDICATIONS_ENABLE:  //enable gatt characteristics notifications
-      nextState = THERMO_INDICATIONS_ENABLE;
-      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
-        {
-          // enable the indications sent from server
-          sc = sl_bt_gatt_set_characteristic_notification (ble_data_ptr->connectionHandle,
-                                                           ble_data_ptr->htmcharacteristicsHandle,
-                                                           sl_bt_gatt_indication);
-          if (sc != SL_STATUS_OK)
-             LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
-          nextState = PB_SERVICES_DISCOVER;
-
-        }
-      break;
-
- ////////////////////////////DISCOVER SERVICES BY UUID FOR PUSH BUTTON ///////////////////////////////////////////
-    case PB_SERVICES_DISCOVER: //discover services by uuid
-        nextState = PB_SERVICES_DISCOVER;
-        if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
-          {
-            // discover primary services by UUID
-            sc = sl_bt_gatt_discover_primary_services_by_uuid ( ble_data_ptr->connectionHandle, sizeof(pb_service),(uint8_t*) pb_service);
-            if (sc != SL_STATUS_OK)
-               LOG_ERROR( "sl_bt_gatt_discover_primary_services_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
-            nextState = PB_CHARACTERITICS_DISCOVER;
-          }
-        break;
-
- ////////////////////////////DISCOVER CHARACTERITICS BY UUID FOR PUSH BUTTON ///////////////////////////////////////////
-    case PB_CHARACTERITICS_DISCOVER: // discover characterictics by uuid
-      nextState = PB_CHARACTERITICS_DISCOVER;
-      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
-        {
-          // discover  characteristics by specified UUID
-          sc = sl_bt_gatt_discover_characteristics_by_uuid (ble_data_ptr->connectionHandle,
-                                                            ble_data_ptr->pbserviceHandle,
-                                                            sizeof(pb_char),
-                                                            (uint8_t*) pb_char);
-          if (sc != SL_STATUS_OK)
-              LOG_ERROR( "sl_bt_gatt_discover_characteristics_by_uuid() returned != 0 status=0x%04x",(unsigned int) sc);
-          nextState = PB_INDICATIONS_ENABLE;
-        }
-      break;
-
-////////////////////////////ENABLE NOTIFICATIONS FOR PUSH BUTTON ///////////////////////////////////////////
-    case PB_INDICATIONS_ENABLE:  //enable gatt characteristics notifications
-      nextState = PB_INDICATIONS_ENABLE;
-      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
-        {
-          // enable the indications sent from server
-          sc = sl_bt_gatt_set_characteristic_notification (ble_data_ptr->connectionHandle,
-                                                           ble_data_ptr->pbcharacteristicsHandle,
-                                                           sl_bt_gatt_indication);
-          if (sc != SL_STATUS_OK)
-             LOG_ERROR( "sl_bt_gatt_set_characteristic_notification() returned != 0 status=0x%04x",(unsigned int) sc);
-          nextState = WAIT_STATE;
-
-        }
-      break;
- ////////////////////////////WAITING STATE ///////////////////////////////////////////
-    case WAIT_STATE://waiting for external event
-      nextState = WAIT_STATE;
-      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_gatt_procedure_completed_id)
-        {
-          displayPrintf (DISPLAY_ROW_CONNECTION, "Handling Indications"); //  client indicates
-          ble_data_ptr->button_state_indication=true;
-          nextState = CLOSED_STATE;
-        }
-      break;
-////////////////////////////CLOSED STATE///////////////////////////////////////////
-    case CLOSED_STATE: //connection closed
-      nextState = CLOSED_STATE;
-      if (SL_BT_MSG_ID(evt->header) == sl_bt_evt_connection_closed_id)
-          nextState = THERMO_SERVICES_DISCOVER;
-      break;
-
-    default:
-      break;
-    } //switch case
-} //discovery state machine
-#endif
 

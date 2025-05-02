@@ -18,7 +18,7 @@
 
 #include "lcd.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 1
+#define INCLUDE_LOG_DEBUG 0
 #include "src/log.h"
 
 uint8_t  read_data[ 2 ]; //to hold sensor data
@@ -32,8 +32,6 @@ static I2C_TransferSeq_TypeDef transferSequence;
  */
 void i2c_init ()
 {
-
-      LOG_INFO("i2c initilaised");
   static I2CSPM_Init_TypeDef I2C_Config =
     {
           .port            = I2C0,
@@ -48,44 +46,6 @@ void i2c_init ()
           .i2cClhr         = i2cClockHLRStandard
   };
 I2CSPM_Init(& I2C_Config);
-}
-
-/*I2C write function to send commands to the sensor
- * No return type and parameters
- */
-void send_I2C_command (void)
-
-{
-  I2C_TransferReturn_TypeDef transferStatus;
-  transferSequence.addr = SI7021_DEVICE_ADDR << 1; //device address
-  transferSequence.flags = I2C_FLAG_WRITE; //write flag is set
-  transferSequence.buf[0].data = &write_cmd; //holds the command to send
-  transferSequence.buf[0].len = sizeof(write_cmd);
-  NVIC_EnableIRQ (I2C0_IRQn); // config NVIC to generate an IRQ for the I2C0 module.
-  transferStatus = I2C_TransferInit (I2C0, &transferSequence); //initialize the i2c transfer
-  if (transferStatus != i2cTransferInProgress) //returns i2cTransferInProgress while performing the transfer
-    {
-      LOG_ERROR("\n\r I2C bus command write failed with %d status\n",transferStatus); //if not returns error
-    }
-}
-
-
-/*I2C read function to recieve data from the sensor
- * No return type and parameters
- */
-void read_temp_data()
-{
-  I2C_TransferReturn_TypeDef transferStatus;
-  transferSequence.addr = SI7021_DEVICE_ADDR << 1; //device address
-  transferSequence.flags = I2C_FLAG_READ;   //read flag is set
-  transferSequence.buf[0].data = read_data;  //receives the read data
-  transferSequence.buf[0].len = sizeof(read_data);
-  NVIC_EnableIRQ (I2C0_IRQn); // config NVIC to generate an IRQ for the I2C0 module
-  transferStatus = I2C_TransferInit (I2C0, &transferSequence); //initilaises the i2c transfer
-  if (transferStatus != i2cTransferInProgress)//returns i2cTransferInProgress while performing the transfer
-    {
-      LOG_ERROR("\n\r I2C bus temperature read failed with %d status\n",transferStatus);//if not returns error
-    }
 }
 
 

@@ -58,8 +58,8 @@ void gpioInit ()
    GPIO_ExtIntConfig (PB_port, PB1_pin, PB1_pin, true, true, true);
 
    //configure the ambient light sensor interrupt pin
-//   GPIO_PinModeSet (PA_port, interrupt_pin,gpioModeInputPullFilter,true);
-//   GPIO_ExtIntConfig (PA_port, interrupt_pin,interrupt_pin, false, true, true);
+   GPIO_PinModeSet (PA_port, interrupt_pin,gpioModeInputPullFilter,true);
+  GPIO_ExtIntConfig (PA_port, interrupt_pin,interrupt_pin, false, true, true);
 
 
 } // gpioInit()

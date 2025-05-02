@@ -23,7 +23,7 @@
 #include"app.h"
 #include "em_gpio.h"
 // Include logging for this file
-#define INCLUDE_LOG_DEBUG 1
+#define INCLUDE_LOG_DEBUG 0
 #include "src/log.h"
 
 /* Configures the LETIMER0 parameters
