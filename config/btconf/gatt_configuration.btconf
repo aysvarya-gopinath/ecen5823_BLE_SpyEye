@@ -168,7 +168,8 @@ When used with the Measurement Interval characteristic, the Valid Range descript
     <characteristic const="false" id="alert_message" name="Intruder Alert message " sourceId="" uuid="7422307e-ab67-409e-a643-2721dc061835">
       <value length="1" type="hex" variable_length="false">00</value>
       <properties>
-        <indicate authenticated="false" bonded="false" encrypted="false"/>
+        <read authenticated="false" bonded="true" encrypted="false"/>
+        <indicate authenticated="false" bonded="true" encrypted="false"/>
       </properties>
 
       <!--Custom Descriptor-->

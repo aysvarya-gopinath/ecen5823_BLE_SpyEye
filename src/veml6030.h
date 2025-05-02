@@ -25,11 +25,11 @@
 #define VEML6030_REG_INTERRUPT   (0x06)  // command code for interrupt read register
 
 
-#define CONFIG_CODE (0001100011000000)//  // gain is 1x; 100ms integration time
+#define CONFIG_CODE (0x18C0)//  // gain is 1x; 100ms integration time
 #define POWER_UP (0x00) //power on
-#define POWER_MODE (0111) // power mode 4 and power save enabled
-#define LOW_THRESHOLD (0x1458)//1010001011000 for 300lux
-#define HIGH_THRESHOLD (0xA98B)//for lux above 2500lux
+#define POWER_MODE (0x07) // power mode 4 and power save enabled
+#define LOW_THRESHOLD (0x0A2C)//1010001011000 for 300lux
+#define HIGH_THRESHOLD (0x54C5)//for lux above 2500lux
 
 void veml6030_init(void);
 void veml6030_read_data(void);

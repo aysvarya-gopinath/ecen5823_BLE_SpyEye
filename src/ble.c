@@ -169,7 +169,7 @@ void send_temp_ble(uint8_t message){
   if (sc != SL_STATUS_OK)
     LOG_ERROR("\n\r sl_bt_gatt_server_write_attribute_value() returned != 0 status=0x%04x\n", (unsigned int) sc);
 
-  if (ble_data.htm_indications == true)//if the indications are enabled
+  if ((ble_data.htm_indications == true)&&(ble_data.bonding_status == 1))//if the indications are enabled
     {
       if (ble_data.inflight_indication == false && (get_queue_depth () == 0)) //if not inflight and queue is empty
         {
@@ -212,6 +212,7 @@ void send_pushbutton_data(uint8_t pb_data)
     {
       if (ble_data.inflight_indication == false && (get_queue_depth () == 0)) //if queue is empty then send directly to client
         {
+
           sc = sl_bt_gatt_server_send_indication (ble_data.connectionHandle,
                                                   gattdb_button_state,
                                                   1,
@@ -534,13 +535,13 @@ void handle_ble_event (sl_bt_msg_t *evt)
                         == sl_bt_gatt_server_notification_and_indication))
                   {
                     ble_data.htm_indications = true;  //enabled htm indications
-                    gpioLed0SetOn (); //turn on LED0 when htm indications are enabled
+                   // gpioLed0SetOn (); //turn on LED0 when htm indications are enabled
                   } // sl_bt_gatt_server_indication
                 else
                   {
                     ble_data.htm_indications = false;  //disabled htm indication
                     displayPrintf (DISPLAY_ROW_TEMPVALUE, "");
-                    gpioLed0SetOff (); //turn off LED0 when htm indications are disabled
+                   // gpioLed0SetOff (); //turn off LED0 when htm indications are disabled
                   }
               }  //sl_bt_gatt_server_client_config
 
@@ -579,12 +580,12 @@ void handle_ble_event (sl_bt_msg_t *evt)
                         == sl_bt_gatt_server_notification_and_indication))
                   {
                     ble_data.button_state_indication = true; //enabled button press indications
-                    gpioLed1SetOn (); //turn on LED1 when button press indications are enabled
+                   // gpioLed1SetOn (); //turn on LED1 when button press indications are enabled
                   } // sl_bt_gatt_server_indication
                 else
                   {
                     ble_data.button_state_indication = false; //disabled  button_state indication
-                    gpioLed1SetOff (); //turn off LED0 when button press indications are disabled
+                   // gpioLed1SetOff (); //turn off LED0 when button press indications are disabled
                   }
               }  //sl_bt_gatt_server_client_config
 

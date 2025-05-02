@@ -77,7 +77,6 @@ void GPIO_EVEN_IRQHandler()
         }
     }
   CORE_EXIT_CRITICAL(); //exiting critical sections
-
 }
 
 /* The default handler for the push button 1 interrupt

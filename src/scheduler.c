@@ -210,12 +210,22 @@ void VEML6030_state_machine(sl_bt_msg_t *evt)
                 }
               break;
 
-      */
+*/
             case ReadWait:
               nextState = ReadWait; //i2c reading temperature data
               if (eventValue && I2C_COMPLETE) //non-blocking irq wait generates a COMP1 interrupt when expired
                 {
                   veml6030_read_data();
+                  nextState = SensorWait;
+                }
+              break;
+
+
+            case SensorWait:
+              nextState = SensorWait;
+              if (eventValue && I2C_COMPLETE)
+                {
+                  veml6030_write_register(VEML6030_REG_CONFIG,0x01); //turn off
                   nextState = SensorOFF;
                 }
               break;

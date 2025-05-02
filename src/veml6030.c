@@ -15,8 +15,9 @@
 #include"stdint.h"
 #include"em_cmu.h"
 #include"ble.h"
+#include "lcd.h"
 // Include logging specifically for this .c file
-#define INCLUDE_LOG_DEBUG 0
+#define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"
 
 // Buffer for receiving data
@@ -44,10 +45,10 @@ void veml6030_write_register(uint8_t reg, uint16_t value) {
 
 //Power up the sensor
 void veml6030_powerON(void)
-{
+{  //LOG_INFO("ambient light sensor powering up");
   //power on the sensor
   veml6030_write_register(VEML6030_REG_CONFIG, POWER_UP);
- // LOG_INFO("ambient light sensor powering up");
+
 
 }
 
@@ -55,7 +56,6 @@ void veml6030_powerON(void)
 void veml6030_powerMode(void)
 {
 veml6030_write_register(VEML6030_REG_POWER,POWER_MODE);
-//LOG_INFO("setting ambient light sensor power mode");
 }
 
 // Initialize I2C for veml6030 sensor
@@ -68,14 +68,12 @@ void veml6030_init(void) {
 void veml6030_high_threshold(void)
 {
   veml6030_write_register(VEML6030_REG_HIGH,HIGH_THRESHOLD);
-  //  LOG_INFO("high threshold set");
 }
 
 //set the low threshold to trigger an interrupt
 void veml6030_low_threshold(void)
 {
   veml6030_write_register(VEML6030_REG_LOW ,LOW_THRESHOLD);
-    //LOG_INFO("low threshold set");
 }
 
 
@@ -85,7 +83,6 @@ void config_read(void)
   uint8_t reg_address = VEML6030_REG_INTERRUPT ; //read if interrupt flags are set
   uint8_t config_data[2];
   I2C_TransferReturn_TypeDef transferStatus;
-  LOG_INFO("i2c config read started");
 
     transferSequence.addr = VEML6030_I2C_ADDR << 1;
     transferSequence.flags = I2C_FLAG_WRITE_READ;
@@ -104,12 +101,8 @@ void config_read(void)
      uint8_t high_bits = (config_value >> 14) &  0x01;
      if((low_bits)||(high_bits))
        {
-         LOG_INFO("INTERRUPT FLAGS ARE SET");
+         //LOG_INFO("INTERRUPT FLAGS ARE SET");
        }
-
-       LOG_INFO("INTRUDER FOUND");
-       send_temp_ble(1);
-
 }
 
 
@@ -139,7 +132,7 @@ void veml6030_conversion(void)
   // Convert the 16-bit raw data to lux
         light_data = (uint16_t)read_lux[0]  | ( (uint16_t)read_lux[1]<< 8); //lsb first
         float lux = 0.0576* light_data;
-          LOG_INFO("Uncorrected Lux: %.2f lux\n", lux);
+          //LOG_INFO("Uncorrected Lux: %.2f lux\n", lux);
 
             // Apply non-linearity correction if lux > 1000
             if (lux > 1000.0) {
@@ -153,10 +146,12 @@ void veml6030_conversion(void)
            // else
             if(lux<300)
               { send_temp_ble(1);
+              displayPrintf (DISPLAY_ROW_TEMPVALUE, "INTRUDER FOUND");
             LOG_INFO("INTRUDER FOUND");
               }
             else
               {send_temp_ble(0);
+              displayPrintf (DISPLAY_ROW_TEMPVALUE, "SAFE");
               LOG_INFO("SAFE");
               }
 }
